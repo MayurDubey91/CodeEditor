@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8"/>
+        <link rel="stylesheet" href="codeEditor.css"/>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs/loader.min.js"></script>
+        <title>Code Editor</title>
+    </head>
+    <body>
+        <div id="loginOverlay" class="login-overlay">
+            <div class="login-panel">
+                <h1>Sign in</h1>
+                <p>Log in to continue using Code Editor.</p>
+                <div class="login-field">
+                    <input id="loginEmail" type="text" placeholder="Email or username" autocomplete="username" />
+                </div>
+                <div class="login-field">
+                    <input id="loginPassword" type="password" placeholder="Password" autocomplete="current-password" />
+                </div>
+                <button id="loginSubmit" class="login-submit">Sign In</button>
+                <div id="loginError" class="login-error" aria-live="polite"></div>
+            </div>
+        </div>
+        <div class="editor-content">
+            <!-- LEFT PANEL -->
+            <div class="hierarchy-panel" id="leftPanel">
+                <!-- <div class="sidebar-toggle" id="sidebarToggle">❯</div> -->
+                <select id="modeDropdown" class="mode-dropdown"></select>
+                <!-- <div class="modes-header">
+                <span id="currentEnterpriseName"></span>
+                </div> -->
+                <div class="editor-top-bar">
+                    <select id="enterpriseDropdown" class="editor-dropdown"></select>
+                    <!-- <div class="doc-creation-section">
+                        <button id="createDocButton" class="create-doc-button">+ Create Doc</button>
+                        <div id="scriptsList" class="scripts-list"></div>
+                    </div> -->
+                </div>
+                <div class="hierarchy-tree" id="hierarchyTree">
+                    <div id="OT" class="ot"></div>
+                    <div id="Cat" class="cat"></div>
+                </div>
+                <div class="-context-Identifier-div" style="margin-bottom: 5px;">
+                    <input type="text" id="contextIdentifier" class="editor-input" placeholder="Enter context identifier">
+                </div>
+  
+                <div class="-context-input-box">
+                    <div class="contexts-wrapper" id="contextsWrapper" style="display:none;">
+                        <div id="contextsLoader" class="contexts-loader hidden">
+                            <img id="table-loader" src="./codeEditorimages/Loader icon.gif" class="loader-img" alt="Loading..." />
+                        </div>
+                        <div id="contextControls" style="display:none;">
+                            <div class="context-header">
+                                <div id="contextSourceLabel" class="context-source-label"></div>
+                                <button id="refreshContextsBtn" class="refresh-btn">↻</button>
+                            </div>
+
+                            <div class="-context-input">
+                                <input type="text" id="searchContexts" class="editor-input" placeholder="Search Contexts">
+                            </div>
+                        </div>
+
+                        <table id="contextsTable" class="contexts-table">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Last Modified</th>
+                                    <th>Last Edited By</th>
+                                </tr>
+                            </thead>
+                            <tbody id="contextsBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <div class="bottom-bar">
+                    <input type="checkbox" id="showHiddenFiles">
+                    <label for="showHiddenFiles" style="color: #ccc; font-size: 12px;margin-right: 5px;">Script URL :</label>
+                    <input type="text" id="scriptUrlInput" class="editor-input" placeholder="Enter script URL">
+                    <button id="loadScriptButton" class="create-doc-button">Login</button>
+                </div>
+            </div>
+            <div class="project-panel collapsed" id="projectPanel">
+                <div class="project-header">
+                    <span>Projects</span>
+                    <button id="projectToggle" class="project-toggle">❮❮</button>
+                </div>
+                <div class="project-body">Your project is currently empty</div>
+                <div class="project-collapsed-label">
+                    <button id="projectExpand" class="project-expand">❯❯</button>
+                    <span>Projects</span>
+                </div>
+            </div>
+            <!-- RIGHT PANEL -->
+            <div class="editor-main">
+                <div id="tabsContainer" class="tabs-container"></div>
+                <!-- <div id="tabsContent"></div> -->
+                <div id="monacoEditor"></div>
+                <div id="executionPanel" class="execution-panel hidden">
+                    <pre id="executionOutput"></pre>
+                </div>
+            </div>
+        </div>
+        <div id="saveModal" class="-save-modal">
+            <div style="background:#252526;color:white;padding:20px;width:350px;border-radius:6px;">
+                <h3>Save Changes?</h3>
+                <p>Do you want to save changes before closing?</p>
+                <div style="text-align:right">
+                <button id="saveBtn">Save</button>
+                <button id="dontSaveBtn">Don't Save</button>
+                <button id="cancelBtn">Cancel</button>
+                </div>
+            </div>
+        </div>
+        <div id="loader-container" class="loader-content -hidden">
+            <img id="table-loader" src="./codeEditorimages/Loader icon.gif" class="-loader-img" alt="Loading..."/>
+        </div>
+        <div id="contextMenu" class="context-menu hidden">
+            <div id="copyContextId">Copy Id</div>
+        </div>
+        <script src="codeEditor.js"></script>
+        <script src="frameWork.js"></script>
+    </body>
+</html>
