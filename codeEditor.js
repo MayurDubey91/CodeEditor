@@ -3,10 +3,15 @@ var codeEditor = function () {
   this.projectFiles = [];
   this.init();
 };
+
 codeEditor.prototype = {
   topLevelCategory: 944825057,
   topLevelCloudType: 944823551,
   init: async function () {
+    var savedUserData = localStorage.getItem("userData");
+    if (savedUserData) {
+      window.UserData = JSON.parse(savedUserData);
+    }
     // FIRST THING
     if (localStorage.getItem("isLoggedIn") === "true") {
       document.body.classList.add("logged-in");
@@ -33,7 +38,7 @@ codeEditor.prototype = {
 
     var scriptUrlInput = document.getElementById("scriptUrlInput");
     if (scriptUrlInput) {
-        scriptUrlInput.value = this.scriptDomain;
+      scriptUrlInput.value = this.scriptDomain;
     }
 
     await this.loadVersions();
@@ -102,12 +107,38 @@ codeEditor.prototype = {
     );
     document.addEventListener("keydown", async (e) => {
       if (e.key === "F5") {
-        e.preventDefault(); // browser refresh rok dega
+        e.preventDefault(); 
         await this.runCustomScriptOnF5();
       }
     });
-
+    document.addEventListener("keydown", (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "i") {
+        e.preventDefault();
+        this.toggleAIPanel();
+      }
+    });
+    var pushQueuesTab = document.getElementById("pushQueuesTab");
+    var liveWebsiteTab = document.getElementById("liveWebsite");
+    if (pushQueuesTab) {
+        pushQueuesTab.addEventListener("click", () => {
+          this.openPushQueuesTab();
+        });
+    }
+    if (liveWebsiteTab) {
+        liveWebsiteTab.addEventListener("click", () => {
+          console.log("Live Website Tab Clicked");
+          this.openLiveWebsiteTab();
+        });
+    }
     this.initializeMonacoEditor();
+    // AI Panel Close Button
+    var closeBtn = document.getElementById("closeAiPanel");
+    if (closeBtn) {
+      closeBtn.addEventListener("click", () => {
+        this.toggleAIPanel();
+      });
+    }
+    this.initializeAIPanel();
     // render AFTER loadProjectState
     this.renderProjectFiles();
 
@@ -124,48 +155,46 @@ codeEditor.prototype = {
     document.body.classList.add("app-ready");
   },
   showMiniLoader: function (element) {
-  if (!element) return;
+    if (!element) return;
 
-  // Already exists
-  if (element.querySelector(".mini-loader")) return;
+    // Already exists
+    if (element.querySelector(".mini-loader")) return;
 
-  // Tree node
-  var toggle = element.querySelector(":scope > .toggle");
-  if (toggle) {
-    toggle.innerHTML = '<span class="mini-loader"></span>';
-    return;
-  }
+    // Tree node
+    var toggle = element.querySelector(":scope > .toggle");
+    if (toggle) {
+      toggle.innerHTML = '<span class="mini-loader"></span>';
+      return;
+    }
 
-  // Tab
-  var loader = document.createElement("span");
-  loader.className = "mini-loader";
-  loader.style.marginLeft = "3px";
+    // Tab
+    var loader = document.createElement("span");
+    loader.className = "mini-loader";
+    loader.style.marginLeft = "3px";
 
-  var title = element.querySelector(".tab-title");
+    var title = element.querySelector(".tab-title");
 
-  if (title) {
-    element.insertBefore(loader, title);
-  } else {
-    element.appendChild(loader);
-  }
-},
+    if (title) {
+      element.insertBefore(loader, title);
+    } else {
+      element.appendChild(loader);
+    }
+  },
 
-hideMiniLoader: function (element) {
-  if (!element) return;
-
-  // Tree node
-  var toggle = element.querySelector(":scope > .toggle");
-  if (toggle && toggle.querySelector(".mini-loader")) {
-    toggle.textContent = "[+] ";
-    return;
-  }
-
-  // Tab
-  var loader = element.querySelector(".mini-loader");
-  if (loader) {
-    loader.remove();
-  }
-},
+  hideMiniLoader: function (element) {
+    if (!element) return;
+    // Tree node
+    var toggle = element.querySelector(":scope > .toggle");
+    if (toggle && toggle.querySelector(".mini-loader")) {
+      toggle.textContent = "[+] ";
+      return;
+    }
+    // Tab
+    var loader = element.querySelector(".mini-loader");
+    if (loader) {
+      loader.remove();
+    }
+  },
   setToggleState: function (node, isOpen) {
     var toggle = node.querySelector(":scope > .toggle");
     if (toggle) {
@@ -291,6 +320,7 @@ hideMiniLoader: function (element) {
 
       this.userData = data.Result;
       this.userDRI = data.Result["Direct Resource Identifier"] || "";
+      window.UserData = data.Result;
 
       // Save login
       localStorage.setItem("isLoggedIn", "true");
@@ -328,22 +358,26 @@ hideMiniLoader: function (element) {
   },
   createUntitledTab: function () {
     var id = "tab_" + Date.now();
-
-    var model = monaco.editor.createModel("", "javascript");
+    var model = monaco.editor.createModel("", "html");
 
     var tab = {
         id: id,
-        name: "untitled",
-        model: model
+        name: "Untitled",
+        model: model,
+        aiMessages: [], 
+        lastAIResult: null,
     };
 
     this.allContexts.push(tab);
     this.currentContextId = id;
 
     this.renderTabs();
+
     this.monacoEditor.setModel(model);
     this.monacoEditor.focus();
-},
+    this.renderAiMessages(tab);
+  },
+
   renderTabs: function () {
     var container = document.getElementById("tabsContainer");
     container.innerHTML = "";
@@ -351,39 +385,85 @@ hideMiniLoader: function (element) {
       var div = document.createElement("div");
       div.className = "tab " + (tab.id === this.currentContextId ? "active" : "");
 
-      // Tab Name
       var title = document.createElement("span");
       title.className = "tab-title";
       title.innerText = tab.name;
+      title.onclick = () => this.switchContext(tab.id);
 
-      title.onclick = () => {
-        this.switchContext(tab.id);
-      };
-
-      div.appendChild(title);
-
-      // Close Button
       var closeBtn = document.createElement("span");
       closeBtn.className = "tab-close";
       closeBtn.innerHTML = "X";
-
       closeBtn.onclick = (e) => {
-        e.stopPropagation();
-        this.confirmCloseTab(tab.id);
+          e.stopPropagation();
+          this.confirmCloseTab(tab.id);
       };
+
+      div.appendChild(title);
       div.appendChild(closeBtn);
+
       container.appendChild(div);
     });
+
+    var aiBtn = document.createElement("button");
+    aiBtn.id = "aiTabButton";
+    aiBtn.className = "ai-tab";
+    aiBtn.textContent = "AI";
+
+    aiBtn.onclick = () => {
+      this.toggleAIPanel();
+    };
+    container.appendChild(aiBtn);
   },
   switchContext: function (id) {
+
+    this.activeTabType = "editor";
+
+    var container = document.getElementById("pushQueuesContainer");
+    var liveWebsiteContainer = document.getElementById("liveWebsiteContainer");
+    var editor = document.getElementById("monacoEditor");
+    var pushQueuesTab = document.getElementById("pushQueuesTab");
+    var liveWebsiteTab = document.getElementById("liveWebsite");
+
+    if (container) {
+        container.style.display = "none";
+    }
+
+    if (liveWebsiteContainer) {
+        liveWebsiteContainer.style.display = "none";
+    }
+
+    if (editor) {
+        editor.style.display = "block";
+    }
+
+    // Remove active class from pinned tabs
+    if (pushQueuesTab) {
+        pushQueuesTab.classList.remove("active");
+    }
+    if (liveWebsiteTab) {
+        liveWebsiteTab.classList.remove("active");
+    }
+
     var tab = this.allContexts.find(t => t.id === id);
     if (!tab) return;
+
     this.currentContextId = id;
+
     this.monacoEditor.setModel(tab.model);
+
     this.renderTabs();
-    // ADD THIS
     this.renderProjectFiles();
-  },
+    this.renderAiMessages(tab);
+
+    this.monacoEditor.layout();
+    this.monacoEditor.focus();
+
+    // AI button enable
+    var aiBtn = document.getElementById("aiTabButton");
+    if (aiBtn) {
+        aiBtn.disabled = false;
+    }
+},
   loadVersions: async function () {
     try {
       var response = await fetch("http://prerelease.liveplatform.com/system/versions");
@@ -1167,6 +1247,8 @@ hideMiniLoader: function (element) {
     if (!this.monacoEditor)return false;
     try {
       var currentTab = this.allContexts.find(x => x.id === this.currentContextId);
+      console.log("Current Tab:", currentTab);
+      console.log("Current filePath:", currentTab.filePath);
       if (!currentTab)
       return false;
       var content = this.monacoEditor.getValue();
@@ -1194,6 +1276,7 @@ hideMiniLoader: function (element) {
       } else {
         existing.name = result.fileName;
         existing.content = content;
+        existing.filePath = result.filePath;
       }
       this.saveProjectState();
       this.renderTabs();
@@ -1254,6 +1337,8 @@ hideMiniLoader: function (element) {
         var tab = {
           id: file.contextId,
           name: file.name,
+          filePath: file.filePath,      
+          savedFileName: file.name,
           model: model
         };
 
@@ -1340,6 +1425,7 @@ hideMiniLoader: function (element) {
           this.monacoEditor.setModel(existingTab.model);
         }
         this.renderTabs();
+        this.renderAiMessages(existingTab);
         utils.showSnackbar("Context opened");
         return;
       }
@@ -1349,11 +1435,13 @@ hideMiniLoader: function (element) {
         name: contextName || ("Context_" + contextId),
         contextId: contextId,
         isContext: true,
-        model: null
+        model: null,
+        aiMessages: []
       };
       this.allContexts.push(tab);
       this.currentContextId = tabId;
       this.renderTabs();
+      this.renderAiMessages(tab);
       await this.loadSourceCodeInEditor(contextId);
       utils.showSnackbar("Context opened");
     } catch (err) {
@@ -1573,7 +1661,7 @@ hideMiniLoader: function (element) {
   },
   saveContext: async function (contextId) {
     try {
-      var url = "http://prerelease.liveplatform.com/SetSourceCode.do" +"?ContextId=" + contextId +"&Mode=" +this.mode;
+      var url = "http://prerelease.liveplatform.com/SetSourceCode.do" +"?ContextId=" + contextId +"&Mode=" + this.mode;
       var code = this.monacoEditor.getValue();
       console.log("Saving:", contextId);
 
@@ -1834,6 +1922,748 @@ hideMiniLoader: function (element) {
   showExecutionResult: function (text) {
     document.getElementById("executionPanel").classList.remove("hidden");
     document.getElementById("executionOutput").textContent = text;
+  },
+  initializeAIPanel: function () {
+    var sendBtn = document.getElementById("sendAiPrompt");
+    var promptInput = document.getElementById("aiPrompt");
+
+    if (!sendBtn || !promptInput) return;
+
+    sendBtn.addEventListener("click", () => this.sendAiPrompt());
+    promptInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        this.sendAiPrompt();
+      }
+    });
+  },
+  addAiMessage: function (text, role, isSystem, saveHistory = true) {
+    var messages = document.getElementById("aiMessages");
+    if (!messages) return;
+
+    var entry = document.createElement("div");
+    entry.className = "ai-message " + (role || "assistant");
+
+    if (isSystem) {
+      entry.classList.add("system");
+    }
+
+    entry.textContent = text || "";
+
+    messages.appendChild(entry);
+    messages.scrollTop = messages.scrollHeight;
+
+    if (!saveHistory) return;
+
+    var activeTab = this.allContexts.find(t => t.id === this.currentContextId);
+
+    if (!activeTab) return;
+
+    // Always keep aiMessages as Array
+    if (!Array.isArray(activeTab.aiMessages)) {
+      activeTab.aiMessages = [];
+    }
+
+    activeTab.aiMessages.push({
+      role: role,
+      text: text,
+      isSystem: !!isSystem
+    });
+  },
+  extractAiReply: function (payload) {
+    if (!payload) return "";
+    if (typeof payload === "string") return payload;
+
+    if (Array.isArray(payload)) {
+      for (var i = 0; i < payload.length; i++) {
+        var nested = this.extractAiReply(payload[i]);
+        if (nested) return nested;
+      }
+      return "";
+    }
+
+    if (typeof payload === "object") {
+      var keys = ["response", "result", "message", "output", "text", "content", "reply", "answer", "data"];
+      for (var key in payload) {
+        if (!Object.prototype.hasOwnProperty.call(payload, key)) continue;
+        var lowerKey = key.toLowerCase();
+        if (keys.indexOf(lowerKey) !== -1) {
+          var value = this.extractAiReply(payload[key]);
+          if (value) return value;
+        }
+      }
+      if (payload.Response) return this.extractAiReply(payload.Response);
+      if (payload.Result) return this.extractAiReply(payload.Result);
+      if (payload.Message) return this.extractAiReply(payload.Message);
+      if (payload.Output) return this.extractAiReply(payload.Output);
+      if (payload.Text) return this.extractAiReply(payload.Text);
+      if (payload.Content) return this.extractAiReply(payload.Content);
+      if (payload.Reply) return this.extractAiReply(payload.Reply);
+      if (payload.Answer) return this.extractAiReply(payload.Answer);
+    }
+    return "";
+  },
+  sendAiPrompt: async function () {
+    var promptInput = document.getElementById("aiPrompt");
+    var sendBtn = document.getElementById("sendAiPrompt");
+    if (!promptInput || !sendBtn) return;
+    var activeTab = this.allContexts.find(t => t.id === this.currentContextId);
+
+    if (!activeTab) {
+      utils.showSnackbar("No file is open.", "warning");
+      return;
+    }
+    if (!Array.isArray(activeTab.aiMessages)) {
+      activeTab.aiMessages = [];
+    }
+
+    var prompt = promptInput.value.trim();
+    if (!prompt) {
+      utils.showSnackbar("Enter a prompt.", "warning");
+      return;
+    }
+
+    // User message
+    this.addAiMessage(prompt, "user");
+
+    promptInput.value = "";
+    sendBtn.disabled = true;
+
+    // Loading message
+    this.addAiMessage("Generating code...", "assistant", true);
+
+    var messages = document.getElementById("aiMessages");
+    var loadingNode = messages.lastElementChild;
+
+    try {
+      var domain = this.getSelectedEnterpriseDoamin();
+      var selectedCode = "";
+      if (this.monacoEditor && this.monacoEditor.getSelection()) {
+        selectedCode = this.monacoEditor.getModel().getValueInRange(this.monacoEditor.getSelection());
+      }
+
+      var payload = {
+        prompt: prompt,
+        selectedCode: selectedCode,
+        fileCode: this.monacoEditor ? this.monacoEditor.getValue() : ""
+      };
+
+      console.log("AI Payload:", payload);
+      var response = await fetch("http://" + domain + "/GetAICode.json?RenderItem=" + activeTab.contextId,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Accept": "application/json"
+          },
+          body: JSON.stringify(payload)
+        });
+      var data = await response.json();
+      console.log("AI Response:", data);
+      // Remove loading node from UI
+      if (loadingNode && loadingNode.parentNode) {
+        loadingNode.parentNode.removeChild(loadingNode);
+      }
+
+      // Remove loading message from history
+      activeTab.aiMessages = activeTab.aiMessages.filter(function (m) {
+        return !(m.isSystem && m.text === "Generating code...");
+      });
+
+      if (!data.Success || !data.Code) {
+        this.addAiMessage("No code returned.", "assistant", true);
+        return;
+      }
+
+      // Create AI response UI
+      var wrapper = document.createElement("div");
+      wrapper.className = "ai-message assistant";
+
+      var pre = document.createElement("pre");
+      pre.className = "ai-code";
+      pre.textContent = data.Code;
+
+      var applyBtn = document.createElement("button");
+      applyBtn.className = "apply-ai-btn";
+      applyBtn.textContent = "Apply";
+
+      applyBtn.onclick = () => {
+        this.monacoEditor.setValue(data.Code);
+        utils.showSnackbar("Code applied successfully.");
+      };
+
+      wrapper.appendChild(pre);
+      wrapper.appendChild(applyBtn);
+
+      messages.appendChild(wrapper);
+      messages.scrollTop = messages.scrollHeight;
+
+      // Save response in history
+      activeTab.aiMessages.push({
+        role: "assistant",
+        code: data.Code
+      });
+    }
+    catch (err) {
+      console.error(err);
+
+      if (loadingNode && loadingNode.parentNode) {
+        loadingNode.parentNode.removeChild(loadingNode);
+      }
+
+      if (Array.isArray(activeTab.aiMessages)) {
+        activeTab.aiMessages = activeTab.aiMessages.filter(function (m) {
+          return !(m.isSystem && m.text === "Generating code...");
+        });
+      }
+      this.addAiMessage("AI request failed.", "assistant", true);
+      utils.showSnackbar("AI request failed.", "error");
+    }
+    finally {
+      sendBtn.disabled = false;
+      promptInput.focus();
+    }
+  },
+  toggleAIPanel: function () {
+    if (this.activeTabType === "pushQueues") {
+      utils.showSnackbar("AI is not available in Push Queues.");
+      return;
+    }
+
+    var panel = document.getElementById("aiPanel");
+    panel.classList.toggle("hidden");
+
+    if (!panel.classList.contains("hidden")) {
+      document.getElementById("aiPrompt").focus();
+    }
+  },
+  showAIResult: function(code) {
+    var messages = document.getElementById("aiMessages");
+
+    var box = document.createElement("div");
+    box.className = "ai-message assistant";
+
+    var pre = document.createElement("pre");
+    pre.textContent = code;
+
+    var btn = document.createElement("button");
+    btn.className = "apply-ai-btn";
+    btn.textContent = "Apply";
+
+    btn.onclick = () => {
+      this.monacoEditor.setValue(code);
+      utils.showSnackbar("Code applied successfully");
+    };
+
+    box.appendChild(pre);
+    box.appendChild(btn);
+
+    messages.appendChild(box);
+    messages.scrollTop = messages.scrollHeight;
+  },
+  renderAiMessages: function (tab) {
+    var messages = document.getElementById("aiMessages");
+    if (!messages) return;
+    messages.innerHTML = "";
+
+    if (!tab || !Array.isArray(tab.aiMessages)) {
+      return;
+    }
+    tab.aiMessages.forEach(msg => {
+      // Skip temporary loading message
+      if (msg.isSystem && msg.text === "Generating code...") {
+        return;
+      }
+
+      if (msg.code) {
+        var wrapper = document.createElement("div");
+        wrapper.className = "ai-message assistant";
+
+        var pre = document.createElement("pre");
+        pre.className = "ai-code";
+        pre.textContent = msg.code;
+
+        var applyBtn = document.createElement("button");
+        applyBtn.className = "apply-ai-btn";
+        applyBtn.textContent = "Apply";
+
+        applyBtn.onclick = () => {
+          this.monacoEditor.setValue(msg.code);
+          utils.showSnackbar("Code applied successfully.");
+        };
+        wrapper.appendChild(pre);
+        wrapper.appendChild(applyBtn);
+        messages.appendChild(wrapper);
+      } else {
+        // Don't save again while restoring
+        this.addAiMessage(msg.text, msg.role, msg.isSystem, false);
+      }
+    });
+    messages.scrollTop = messages.scrollHeight;
+  },
+  openPushQueuesTab: function () {
+    this.activeTabType = "pushQueues";
+
+    var container = document.getElementById("pushQueuesContainer");
+    var liveWebsiteContainer = document.getElementById("liveWebsiteContainer");
+    var editor = document.getElementById("monacoEditor");
+    var pushQueuesTab = document.getElementById("pushQueuesTab");
+    var liveWebsiteTab = document.getElementById("liveWebsite");
+
+    if (!container || !editor) return;
+
+    editor.style.display = "none";
+    container.style.display = "block";
+
+    if (liveWebsiteContainer) {
+        liveWebsiteContainer.style.display = "none";
+    }
+
+    // Update active tab styling
+    if (pushQueuesTab) {
+        pushQueuesTab.classList.add("active");
+    }
+    if (liveWebsiteTab) {
+        liveWebsiteTab.classList.remove("active");
+    }
+
+    // Disable AI button
+    var aiBtn = document.getElementById("aiTabButton");
+    if (aiBtn) {
+      aiBtn.disabled = true;
+    }
+
+    if (!window.pushQueuesPlugin) {
+      window.pushQueuesPlugin = new pushQueuesContent();
+    } else {
+      window.pushQueuesPlugin.loadMainCloud(true);
+    }
+
+    container.dataset.loaded = "true";
+  },
+  openLiveWebsiteTab: function () {
+    this.activeTabType = "liveWebsite";
+
+    var container = document.getElementById("liveWebsiteContainer");
+    var pushQueuesContainer = document.getElementById("pushQueuesContainer");
+    var editor = document.getElementById("monacoEditor");
+    var pushQueuesTab = document.getElementById("pushQueuesTab");
+    var liveWebsiteTab = document.getElementById("liveWebsite");
+
+    if (!container || !editor) return;
+
+    editor.style.display = "none";
+    container.style.display = "block";
+
+    if (pushQueuesContainer) {
+      pushQueuesContainer.style.display = "none";
+    }
+
+    // Update active tab styling
+    if (liveWebsiteTab) {
+      liveWebsiteTab.classList.add("active");
+    }
+    if (pushQueuesTab) {
+      pushQueuesTab.classList.remove("active");
+    }
+    // Disable AI button
+    var aiBtn = document.getElementById("aiTabButton");
+    if (aiBtn) {
+      aiBtn.disabled = true;
+    }
+    // Initialize the enterprise dropdown
+    this.initializeLiveWebsiteTab();
+  },
+  initializeLiveWebsiteTab: function () {
+
+    var input = document.getElementById("liveWebsiteEnterpriseInput");
+    var dropdown = document.getElementById("liveWebsiteEnterpriseDropdown");
+    //var displayDiv = document.getElementById("selectedEnterpriseDisplay");
+
+    // if (!input || !dropdown || !displayDiv) return;
+
+    // Prevent duplicate initialization
+    if (input.dataset.initialized === "true") {
+      return;
+    }
+    input.dataset.initialized = "true";
+    // Populate dropdown once
+    dropdown.innerHTML = "";
+
+    if (this.enterprises && this.enterprises.length) {
+      this.enterprises.forEach((enterprise) => {
+        var name = enterprise["Formatted Name"] ||enterprise.FormattedName ||enterprise.Name;
+        var option = document.createElement("div");
+        option.className = "enterprise-option";
+        option.textContent = name;
+
+        option.addEventListener("click", async () => {
+          input.value = name;
+          dropdown.style.display = "none";
+          //displayDiv.innerHTML = "<strong>Selected Enterprise:</strong> " + name;
+          this.selectedLiveWebsiteEnterprise = enterprise;
+          // Show Brand section
+          var brandSection = document.getElementById("brandSection");
+          var brandInput = document.getElementById("liveWebsiteBrandInput");
+          if (brandSection) {
+            brandSection.style.display = "block";
+          }
+          if (brandInput) {
+            brandInput.disabled = false;
+          }
+          await this.loadBrands(enterprise);
+        });
+        dropdown.appendChild(option);
+      });
+    }
+    // Show dropdown
+    input.addEventListener("focus", () => {
+      dropdown.style.display = "block";
+      dropdown.querySelectorAll(".enterprise-option").forEach(option => {
+        option.style.display = "block";
+      });
+    });
+
+    // Search filter
+    input.addEventListener("input", () => {
+      var search = input.value.toLowerCase();
+      var hasVisible = false;
+      dropdown.querySelectorAll(".enterprise-option").forEach(option => {
+        if (option.textContent.toLowerCase().includes(search)) {
+          option.style.display = "block";
+          hasVisible = true;
+        } else {
+          option.style.display = "none";
+        }
+      });
+      dropdown.style.display = hasVisible ? "block" : "none";
+    });
+    // Hide dropdown when clicking outside
+    document.addEventListener("click", (e) => {
+      if (!dropdown.contains(e.target) && e.target !== input) {
+        dropdown.style.display = "none";
+      }
+    });
+
+    // Initialize add library button
+    var addLibraryBtn = document.getElementById("addLibraryBtn");
+    if (addLibraryBtn) {
+      addLibraryBtn.addEventListener("click", () => {
+        this.createNewLiveWebsite();
+      });
+    }
+
+    // Initialize add file button
+    var addFileBtn = document.getElementById("addFileBtn");
+    if (addFileBtn) {
+      addFileBtn.addEventListener("click", () => {
+        if (this.selectedLiveWebsite) {
+          this.addFileToLiveWebsite();
+        } else {
+          utils.showSnackbar("Please select a LiveWebsite first.", "warning");
+        }
+      });
+    }
+  },
+  loadBrands: async function (enterprise) {
+    if (!enterprise) {
+      console.warn("No enterprise selected.");
+      return;
+    }
+    var oldDomain = GlobalDomain;
+    GlobalDomain = "https://liveplatform.com";
+
+    try {
+      var cloudName = "[" + enterprise.Id + "]Brands";
+      console.log("Trying Cloud:", cloudName);
+
+      var brandCloud = await utils.getCloud(
+        enterprise["Direct Resource Identifier"],
+        cloudName
+      );
+      console.log("Brand Cloud:", brandCloud);
+
+      if (!brandCloud || !brandCloud.DRI) {
+        console.warn("Brand cloud not found.");
+        return;
+      }
+      this.brandCloudDRI = brandCloud.DRI;
+
+      var data = await utils.getItems(brandCloud.DRI,"Name",true,1,9999);
+      this.brands = data.Results || [];
+      console.log("Brands:", this.brands);
+    } catch (err) {
+      console.error("Failed to load brands:", err);
+      return;
+    } finally {
+      GlobalDomain = oldDomain;
+    }
+
+    var input = document.getElementById("liveWebsiteBrandInput");
+    var dropdown = document.getElementById("liveWebsiteBrandDropdown");
+
+    if (!input || !dropdown) {
+      return;
+    }
+
+    input.disabled = false;
+    input.value = "";
+    dropdown.innerHTML = "";
+
+    var self = this;
+
+    this.brands.forEach(function (brand) {
+      var item = document.createElement("div");
+      item.className = "enterprise-dropdown-item";
+      item.textContent = brand.Name || "";
+
+      item.onclick = async function () {
+        input.value = brand.Name || "";
+        dropdown.style.display = "none";
+
+        self.selectedBrand = brand;
+
+        // Clear previous LiveWebsite list
+        var tree = document.getElementById("liveWebsiteTree");
+        if (tree) {
+          tree.innerHTML = "";
+        }
+        // Load LiveWebsite Library
+        await self.loadLiveWebsiteLibrary(enterprise, brand);
+      };
+
+      dropdown.appendChild(item);
+    });
+
+    input.onfocus = function () {
+      dropdown.style.display = "block";
+    };
+
+    input.oninput = function () {
+      var value = this.value.toLowerCase();
+      dropdown.querySelectorAll(".enterprise-dropdown-item").forEach(function (item) {
+        item.style.display = item.textContent.toLowerCase().includes(value)? "block": "none";
+      });
+
+      dropdown.style.display = "block";
+    };
+
+    document.addEventListener("click", function (e) {
+      if (!e.target.closest(".brand-section")) {
+          dropdown.style.display = "none";
+      }
+    });
+  },
+  loadLiveWebsiteLibrary: async function (enterprise, brand) {
+    if (!enterprise || !brand) return;
+
+    var oldDomain = GlobalDomain;
+    GlobalDomain = "https://liveplatform.com";
+    try {
+      // Selected Brand DRI
+      var brandDRI = brand["Direct Resource Identifier"] || brand.DRI;
+      // Selected Brand Id
+      var brandId = brand.Id;
+      console.log("Brand DRI:", brandDRI);
+      console.log("Brand Id:", brandId);
+      // Brand DRI par UseCloud
+      var libraryCloud = await utils.getCloud(brandDRI,"[" + brandId + "]LiveWebsite Library");
+      console.log("Library Cloud:", libraryCloud);
+
+      if (!libraryCloud || !libraryCloud.DRI) {
+        console.warn("LiveWebsite Library cloud not found.");
+        return;
+      }
+
+      this.libraryCloudDRI = libraryCloud.DRI;
+      // Library cloud par GetItems
+      var data = await utils.getItems(libraryCloud.DRI,"Name",true,1,9999);
+      this.liveWebsiteLibraries = data.Results || [];
+      console.log("LiveWebsite Libraries:", this.liveWebsiteLibraries);
+      var tree = document.getElementById("liveWebsiteTree");
+      if (!tree) {
+        console.warn("liveWebsiteTree not found.");
+        return;
+      }
+      tree.innerHTML = "";
+      var self = this;
+      this.liveWebsiteLibraries.forEach(function (website) {
+        var item = document.createElement("div");
+        item.className = "livewebsite-item";
+        item.textContent = website.Name || "Unnamed";
+
+        item.onclick = async function () {
+          // Selected highlight
+          tree.querySelectorAll(".livewebsite-item").forEach(function (x) {
+            x.classList.remove("selected");
+          });
+          item.classList.add("selected");
+          self.selectedLiveWebsite = website;
+          console.log("Selected LiveWebsite:", website);
+          await self.loadLiveWebsiteFiles(website);
+        };
+        tree.appendChild(item);
+      });
+    } catch (e) {
+      console.error("Library Load Error:", e);
+    } finally {
+      GlobalDomain = oldDomain;
+    }
+  },
+  loadLiveWebsiteFiles: function (library) {
+    var filesSection = document.getElementById("filesSection");
+    var filesCloud = document.getElementById("filesCloud");
+    var websiteNameDisplay = document.getElementById("websiteNameDisplay");
+
+    if (!filesSection || !filesCloud) return;
+
+    var displayName = library && (library.Name || library.name || "Website Files") || "Website Files";
+    if (websiteNameDisplay) {
+      websiteNameDisplay.textContent = displayName;
+    }
+    filesSection.style.display = "block";
+    filesCloud.innerHTML = "";
+
+    var files = [];
+    if (library && Array.isArray(library.Files)) {
+      files = library.Files;
+    } else if (library && Array.isArray(library.files)) {
+      files = library.files;
+    } else if (library && Array.isArray(library.Items)) {
+      files = library.Items;
+    } else {
+      files = [
+        { Id: "f1", Name: "index.html" },
+        { Id: "f2", Name: "style.css" },
+        { Id: "f3", Name: "script.js" },
+        { Id: "f4", Name: "config.json" }
+      ];
+    }
+
+    var self = this;
+    files.forEach((file) => {
+      var fileName = self.getLiveWebsiteFileName(file);
+      var item = document.createElement("div");
+      item.className = "file-item";
+      item.dataset.id = file.Id || file.id || fileName;
+
+      var icon = document.createElement("div");
+      icon.className = "file-item-icon";
+      icon.textContent = self.getFileIcon(fileName);
+
+      var name = document.createElement("div");
+      name.className = "file-item-name";
+      name.textContent = fileName;
+
+      item.appendChild(icon);
+      item.appendChild(name);
+
+      item.addEventListener("click", () => {
+        document.querySelectorAll(".file-item").forEach(el => {
+          el.classList.remove("selected");
+        });
+        item.classList.add("selected");
+        self.openLiveWebsiteFile(file);
+      });
+
+      filesCloud.appendChild(item);
+    });
+  },
+  getLiveWebsiteFileName: function (file) {
+    if (!file) return "untitled.txt";
+    return file.Name || file.name || file["File Name"] || file["fileName"] || "untitled.txt";
+  },
+  getLiveWebsiteFileContent: function (file) {
+    if (!file) return "";
+    if (typeof file.Content === "string") return file.Content;
+    if (typeof file.content === "string") return file.content;
+    if (typeof file.Text === "string") return file.Text;
+    if (typeof file.text === "string") return file.text;
+    if (typeof file.Code === "string") return file.Code;
+    if (typeof file.code === "string") return file.code;
+    return this.getDefaultLiveWebsiteFileContent(this.getLiveWebsiteFileName(file));
+  },
+  getDefaultLiveWebsiteFileContent: function (fileName) {
+    var ext = (fileName || "").split(".").pop().toLowerCase();
+    switch (ext) {
+      case "html":
+      case "htm":
+        return "<!DOCTYPE html>\n<html>\n  <body>\n    <h1>Hello from LiveWebsite</h1>\n  </body>\n</html>";
+      case "css":
+        return "body {\n  font-family: Arial, sans-serif;\n  color: #333;\n}";
+      case "js":
+        return "console.log('Hello from LiveWebsite');";
+      case "xml":
+        return "<root>\n  <message>Hello</message>\n</root>";
+      case "frm":
+        return "<!-- Form template -->\n<form>\n  <input type=\"text\" />\n</form>";
+      case "json":
+        return "{\n  \"name\": \"livewebsite\"\n}";
+      default:
+        return "";
+    }
+  },
+  isAllowedLiveWebsiteFile: function (fileName) {
+    if (!fileName) return false;
+    var ext = fileName.split(".").pop().toLowerCase();
+    return ["html", "css", "js", "xml", "htm", "frm", "json"].includes(ext);
+  },
+  openLiveWebsiteFile: function (file) {
+    var fileName = this.getLiveWebsiteFileName(file);
+    var editor = document.getElementById("monacoEditor");
+    var container = document.getElementById("liveWebsiteContainer");
+
+    if (!editor) return;
+
+    if (container) {
+      container.style.display = "none";
+    }
+    editor.style.display = "block";
+
+    if (!this.isAllowedLiveWebsiteFile(fileName)) {
+      utils.showSnackbar("This file type is not allowed for editing.", "warning");
+      var messageModel = monaco.editor.createModel("File type not allowed for editing.", "plaintext");
+      this.monacoEditor.setModel(messageModel);
+      this.monacoEditor.focus();
+      return;
+    }
+
+    var content = this.getLiveWebsiteFileContent(file);
+    var language = this.getMonacoLanguage(fileName);
+    var model = monaco.editor.createModel(content, language);
+    this.monacoEditor.setModel(model);
+    this.monacoEditor.focus();
+  },
+  getFileIcon: function (fileName) {
+    if (!fileName) return "";
+    var ext = fileName.split(".").pop().toLowerCase();
+    var icons = {
+      html: "",
+      css: "",
+      js: "",
+      json: "",
+      png: "",
+      jpg: "",
+      jpeg: "",
+      gif: "",
+      svg: "",
+      txt: ""
+    };
+    return icons[ext] || "";
+  },
+  createNewLiveWebsite: function () {
+    var name = prompt("Enter LiveWebsite name:");
+    if (!name) return;
+    
+    utils.showSnackbar("Creating new LiveWebsite: " + name + "...", "info");
+    console.log("Create new LiveWebsite:", name);
+  },
+  addFileToLiveWebsite: function () {
+    var fileName = prompt("Enter file name:");
+    if (!fileName) return;
+    
+    utils.showSnackbar("Adding file: " + fileName + "...", "info");
+    console.log("Add file to LiveWebsite:", fileName);
   },
 };
 window.editorInstance = new codeEditor();
