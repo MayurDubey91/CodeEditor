@@ -3,6 +3,7 @@ var codeEditor = function () {
   this.projectFiles = [];
   this.init();
 };
+
 codeEditor.prototype = {
   topLevelCategory: 944825057,
   topLevelCloudType: 944823551,
