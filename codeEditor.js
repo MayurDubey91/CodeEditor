@@ -52,6 +52,7 @@ codeEditor.prototype = {
     this.loadProjectState();
     this.pendingCloseTabId = null;
     this.initializeSaveModal();
+    this.initializePushQueuesPanel();
 
     document.getElementById("modeDropdown").addEventListener("change", async (e) => {
       this.nodeCache = {
@@ -97,10 +98,10 @@ codeEditor.prototype = {
       this.createUntitledTab();
     });
     document.getElementById("contextIdentifier").addEventListener("keydown", async (e) => {
-        if (e.key !== "Enter") return;
-        var contextId = e.target.value.trim();
-        if (!contextId) return;
-        await this.openContextById(contextId);
+      if (e.key !== "Enter") return;
+      var contextId = e.target.value.trim();
+      if (!contextId) return;
+      await this.openContextById(contextId);
     });
     document.getElementById("refreshContextsBtn")?.addEventListener("click",() => 
       this.refreshContexts()
@@ -117,18 +118,18 @@ codeEditor.prototype = {
         this.toggleAIPanel();
       }
     });
-    var pushQueuesTab = document.getElementById("pushQueuesTab");
+    var pushQueuesTab = document.getElementById("pushQueuesExpand");
     var liveWebsiteTab = document.getElementById("liveWebsite");
     if (pushQueuesTab) {
-        pushQueuesTab.addEventListener("click", () => {
-          this.openPushQueuesTab();
-        });
+      pushQueuesTab.addEventListener("click", () => {
+        this.openPushQueuesTab();
+      });
     }
     if (liveWebsiteTab) {
-        liveWebsiteTab.addEventListener("click", () => {
-          console.log("Live Website Tab Clicked");
-          this.openLiveWebsiteTab();
-        });
+      liveWebsiteTab.addEventListener("click", () => {
+        console.log("Live Website Tab Clicked");
+        this.openLiveWebsiteTab();
+      });
     }
     this.initializeMonacoEditor();
     // AI Panel Close Button
@@ -143,6 +144,8 @@ codeEditor.prototype = {
     this.renderProjectFiles();
 
     this.initializeSidebarToggle();
+    this.initializeSectionToggle("projectToggle", "projectPanel");
+    this.initializeSectionToggle("liveWebsiteToggle", "liveWebsitePanel");
     this.initializeContextMenu();
     this.initializeLoginScreen();
     this.initializeScriptLogin();
@@ -216,7 +219,7 @@ codeEditor.prototype = {
           theme: "vs-dark",
           automaticLayout: true,
           minimap: {
-              enabled: false
+            enabled: false
           }
         }
       );
@@ -225,26 +228,31 @@ codeEditor.prototype = {
     });
   },
   initializeSidebarToggle: function () {
-    var projectPanel = document.getElementById("projectPanel");
-    var collapseBtn = document.getElementById("projectToggle");
-    var expandBtn = document.getElementById("projectExpand");
-    if (collapseBtn) {
-      collapseBtn.addEventListener("click", () => {
-        projectPanel.classList.add("collapsed");
-        if (this.monacoEditor) {
-          setTimeout(() => this.monacoEditor.layout(), 300);
-        }
-      });
-    }
-    if (expandBtn) {
-      expandBtn.addEventListener("click", () => {
-        projectPanel.classList.remove("collapsed");
 
-        if (this.monacoEditor) {
-          setTimeout(() => this.monacoEditor.layout(), 300);
-        }
-      });
-    }
+    var projectPanel = document.getElementById("projectPanel");
+    var projectToggle = document.getElementById("projectToggle");
+
+    if (!projectPanel || !projectToggle) return;
+
+    // Default collapsed
+    projectPanel.style.display = "none";
+    projectToggle.innerHTML = "▲";
+
+    projectToggle.onclick = () => {
+      var isHidden = projectPanel.style.display === "none";
+
+      if (isHidden) {
+        projectPanel.style.display = "block";
+        projectToggle.innerHTML = "▼";
+      } else {
+        projectPanel.style.display = "none";
+        projectToggle.innerHTML = "▲";
+      }
+
+      if (this.monacoEditor) {
+        this.monacoEditor.layout();
+      }
+    };
   },
   initializeLoginScreen: function () {
     if (localStorage.getItem("isLoggedIn") === "true") {
@@ -361,11 +369,11 @@ codeEditor.prototype = {
     var model = monaco.editor.createModel("", "html");
 
     var tab = {
-        id: id,
-        name: "Untitled",
-        model: model,
-        aiMessages: [], 
-        lastAIResult: null,
+      id: id,
+      name: "Untitled",
+      model: model,
+      aiMessages: [], 
+      lastAIResult: null,
     };
 
     this.allContexts.push(tab);
@@ -578,6 +586,7 @@ codeEditor.prototype = {
       });
       this.getAndLoadOTs();
       this.getAndLoadTopLevelCategoryAndCloudType();
+      this.initializeLiveWebsiteTab();
     } catch (error) {
       console.error("Failed to load enterprises:",error);
     }
@@ -683,8 +692,8 @@ codeEditor.prototype = {
           if (name === "Categories") {
             this.setContextSourceLabel("Category","Categories");
             this.lastContextSource = {
-                action: "Category",
-                id: this.topLevelCategory
+              action: "Category",
+              id: this.topLevelCategory
             };
             await this.loadCategoryContexts(this.topLevelCategory);
             return;
@@ -1007,36 +1016,20 @@ codeEditor.prototype = {
   },
   loadContexts: async function (objectId, type = "ObjectType") {
     this.toggleContexts(true);
-    
     try {
       type = (type || "").trim();
-
-      var cacheKey =
-        (this.selectedEnterprise?.Id || "default") +
-        "_" +
-        this.mode +
-        "_" +
-        type +
-        "_" +
-        objectId;
-
+      var cacheKey = (this.selectedEnterprise?.Id || "default") +"_" +this.mode + "_" +type +"_" +objectId;
       // Prevent duplicate API calls
       if (this.contextLoading[cacheKey]) {
         return;
       }
-
       this.contextLoading[cacheKey] = true;
-
       if (!this.contextCache[type]) {
         this.contextCache[type] = {};
       }
-
       // Cache hit
       if (this.contextCache[type][cacheKey]) {
-        this.renderContextsFromCache(
-          this.contextCache[type][cacheKey]
-        );
-
+        this.renderContextsFromCache(this.contextCache[type][cacheKey]);
         this.contextLoading[cacheKey] = false;
         return;
       }
@@ -1046,30 +1039,18 @@ codeEditor.prototype = {
 
       var wrapper = document.getElementById("contextsWrapper");
       var tbody = document.getElementById("contextsBody");
-
       wrapper.style.display = "block";
       tbody.innerHTML = "<tr><td colspan='3'>Loading...</td></tr>";
 
       var domain = this.getSelectedEnterpriseDoamin();
-
-      var url =
-        "http://" +
-        domain +
-        "/GetContexts.json?Type=" +
-        type +
-        "&Fields=Last%20Edited%20On||Last%20Edited%20By" +
-        "&ResultCount=3000" +
-        "&ObjectType=" +
-        objectId;
+      var url = "http://" + domain + "/GetContexts.json?Type=" +type +"&Fields=Last%20Edited%20On||Last%20Edited%20By" +"&ResultCount=3000" +"&ObjectType=" +objectId;
 
       var response = await fetch(url);
       var data = await response.json();
-
       var list = data.Results || [];
 
       // DEBUG
       console.log("Contexts:", list);
-
       // Save cache
       this.contextCache[type][objectId] = list;
       this.contextCache[type][cacheKey] = list;
@@ -1078,16 +1059,11 @@ codeEditor.prototype = {
       this.renderContextsFromCache(list);
 
     } catch (err) {
-
       console.error("Context error:", err);
-
-      document.getElementById("contextsBody").innerHTML =
-        "<tr><td colspan='3'>Failed</td></tr>";
+      document.getElementById("contextsBody").innerHTML = "<tr><td colspan='3'>Failed</td></tr>";
 
     } finally {
-
       utils.hideContextLoader();
-
       delete this.contextLoading[cacheKey];
     }
   },
@@ -1151,7 +1127,6 @@ codeEditor.prototype = {
   // },
   loadCategoryContexts: async function (objectId) {
     this.toggleContexts(true);
-
     console.log("loadCategoryContexts called with:",objectId);
     try {
       // // CACHE HIT
@@ -1824,10 +1799,8 @@ codeEditor.prototype = {
   },
   runCustomScriptOnF5: async function () {
     var activeTab = document.querySelector("#tabsContainer .tab.active");
-
     try {
       this.showMiniLoader(activeTab);
-
       var domain = this.scriptDomain || localStorage.getItem("scriptUrl");
       if (!domain) {
         throw new Error("Script URL missing.");
@@ -2205,41 +2178,62 @@ codeEditor.prototype = {
     this.activeTabType = "pushQueues";
 
     var container = document.getElementById("pushQueuesContainer");
-    var liveWebsiteContainer = document.getElementById("liveWebsiteContainer");
+    var panel = document.getElementById("pushQueuesPanel");
+    var panelBody = document.querySelector("#pushQueuesPanel .pushqueues-body");
+
     var editor = document.getElementById("monacoEditor");
+    var liveWebsiteContainer = document.getElementById("liveWebsiteContainer");
+
     var pushQueuesTab = document.getElementById("pushQueuesTab");
     var liveWebsiteTab = document.getElementById("liveWebsite");
 
-    if (!container || !editor) return;
+    if (!container || !panel || !panelBody) return;
 
-    editor.style.display = "none";
+    // Move Push Queues UI inside panel
+    if (container.parentNode !== panelBody) {
+        panelBody.appendChild(container);
+    }
+
+    // Show panel
+    panel.classList.remove("collapsed");
+    panel.style.display = "flex";
+
+    // Show Push Queues
     container.style.display = "block";
 
+    // Hide editor
+    if (editor) {
+        editor.style.display = "none";
+    }
+
+    // Hide LiveWebsite
     if (liveWebsiteContainer) {
         liveWebsiteContainer.style.display = "none";
     }
 
-    // Update active tab styling
+    // Active tab
     if (pushQueuesTab) {
         pushQueuesTab.classList.add("active");
     }
     if (liveWebsiteTab) {
         liveWebsiteTab.classList.remove("active");
     }
-
-    // Disable AI button
+    // Disable AI
     var aiBtn = document.getElementById("aiTabButton");
     if (aiBtn) {
-      aiBtn.disabled = true;
+        aiBtn.disabled = true;
     }
 
+    // Load plugin
     if (!window.pushQueuesPlugin) {
-      window.pushQueuesPlugin = new pushQueuesContent();
+        window.pushQueuesPlugin = new pushQueuesContent();
     } else {
-      window.pushQueuesPlugin.loadMainCloud(true);
+        window.pushQueuesPlugin.loadMainCloud(true);
     }
 
-    container.dataset.loaded = "true";
+    if (this.monacoEditor) {
+        this.monacoEditor.layout();
+    }
   },
   openLiveWebsiteTab: function () {
     this.activeTabType = "liveWebsite";
@@ -2275,94 +2269,87 @@ codeEditor.prototype = {
     this.initializeLiveWebsiteTab();
   },
   initializeLiveWebsiteTab: function () {
-
     var input = document.getElementById("liveWebsiteEnterpriseInput");
     var dropdown = document.getElementById("liveWebsiteEnterpriseDropdown");
-    //var displayDiv = document.getElementById("selectedEnterpriseDisplay");
-
-    // if (!input || !dropdown || !displayDiv) return;
-
-    // Prevent duplicate initialization
-    if (input.dataset.initialized === "true") {
+    if (!input || !dropdown) {
+      console.warn("LiveWebsite controls not found.");
       return;
     }
-    input.dataset.initialized = "true";
-    // Populate dropdown once
+    // Rebuild dropdown every time
     dropdown.innerHTML = "";
-
+    console.log("Enterprises Loaded:", this.enterprises ? this.enterprises.length : 0);
     if (this.enterprises && this.enterprises.length) {
       this.enterprises.forEach((enterprise) => {
-        var name = enterprise["Formatted Name"] ||enterprise.FormattedName ||enterprise.Name;
+        var name =enterprise["Formatted Name"] || enterprise.FormattedName ||enterprise.Name;
         var option = document.createElement("div");
         option.className = "enterprise-option";
         option.textContent = name;
-
         option.addEventListener("click", async () => {
           input.value = name;
           dropdown.style.display = "none";
-          //displayDiv.innerHTML = "<strong>Selected Enterprise:</strong> " + name;
           this.selectedLiveWebsiteEnterprise = enterprise;
-          // Show Brand section
           var brandSection = document.getElementById("brandSection");
           var brandInput = document.getElementById("liveWebsiteBrandInput");
           if (brandSection) {
             brandSection.style.display = "block";
           }
+
           if (brandInput) {
             brandInput.disabled = false;
+            brandInput.value = "";
           }
           await this.loadBrands(enterprise);
         });
         dropdown.appendChild(option);
       });
     }
-    // Show dropdown
-    input.addEventListener("focus", () => {
-      dropdown.style.display = "block";
-      dropdown.querySelectorAll(".enterprise-option").forEach(option => {
-        option.style.display = "block";
-      });
-    });
-
-    // Search filter
-    input.addEventListener("input", () => {
-      var search = input.value.toLowerCase();
-      var hasVisible = false;
-      dropdown.querySelectorAll(".enterprise-option").forEach(option => {
-        if (option.textContent.toLowerCase().includes(search)) {
+    // Bind events only once
+    if (input.dataset.initialized !== "true") {
+      input.dataset.initialized = "true";
+      input.addEventListener("focus", () => {
+        dropdown.style.display = "block";
+        dropdown.querySelectorAll(".enterprise-option").forEach(option => {
           option.style.display = "block";
-          hasVisible = true;
-        } else {
-          option.style.display = "none";
+        });
+      });
+
+      input.addEventListener("input", () => {
+        var search = input.value.toLowerCase();
+        var hasVisible = false;
+        dropdown.querySelectorAll(".enterprise-option").forEach(option => {
+          if (option.textContent.toLowerCase().includes(search)) {
+            option.style.display = "block";
+            hasVisible = true;
+          } else {
+            option.style.display = "none";
+          }
+        });
+        dropdown.style.display = hasVisible ? "block" : "none";
+      });
+
+      document.addEventListener("click", (e) => {
+        if (!dropdown.contains(e.target) && e.target !== input) {
+          dropdown.style.display = "none";
         }
       });
-      dropdown.style.display = hasVisible ? "block" : "none";
-    });
-    // Hide dropdown when clicking outside
-    document.addEventListener("click", (e) => {
-      if (!dropdown.contains(e.target) && e.target !== input) {
-        dropdown.style.display = "none";
+      // Add Library
+      var addLibraryBtn = document.getElementById("addLibraryBtn");
+      if (addLibraryBtn) {
+        addLibraryBtn.addEventListener("click", () => {
+          this.createNewLiveWebsite();
+        });
       }
-    });
-
-    // Initialize add library button
-    var addLibraryBtn = document.getElementById("addLibraryBtn");
-    if (addLibraryBtn) {
-      addLibraryBtn.addEventListener("click", () => {
-        this.createNewLiveWebsite();
-      });
-    }
-
-    // Initialize add file button
-    var addFileBtn = document.getElementById("addFileBtn");
-    if (addFileBtn) {
-      addFileBtn.addEventListener("click", () => {
-        if (this.selectedLiveWebsite) {
-          this.addFileToLiveWebsite();
-        } else {
-          utils.showSnackbar("Please select a LiveWebsite first.", "warning");
-        }
-      });
+      // Add File
+      var addFileBtn = document.getElementById("addFileBtn");
+      if (addFileBtn) {
+        addFileBtn.addEventListener("click", () => {
+          if (this.selectedLiveWebsite) {
+            this.addFileToLiveWebsite();
+          } else {
+            utils.showSnackbar("Please select a LiveWebsite first.","warning");
+          }
+        });
+      }
     }
   },
   loadBrands: async function (enterprise) {
@@ -2450,7 +2437,7 @@ codeEditor.prototype = {
 
     document.addEventListener("click", function (e) {
       if (!e.target.closest(".brand-section")) {
-          dropdown.style.display = "none";
+        dropdown.style.display = "none";
       }
     });
   },
@@ -2611,18 +2598,19 @@ codeEditor.prototype = {
   openLiveWebsiteFile: function (file) {
     var fileName = this.getLiveWebsiteFileName(file);
     var editor = document.getElementById("monacoEditor");
-    var container = document.getElementById("liveWebsiteContainer");
-
     if (!editor) return;
-
-    if (container) {
-      container.style.display = "none";
-    }
+    // Monaco Editor show
     editor.style.display = "block";
+
+    // Hide Push Queues if open
+    var pushQueuesContainer = document.getElementById("pushQueuesContainer");
+    if (pushQueuesContainer) {
+      pushQueuesContainer.style.display = "none";
+    }
 
     if (!this.isAllowedLiveWebsiteFile(fileName)) {
       utils.showSnackbar("This file type is not allowed for editing.", "warning");
-      var messageModel = monaco.editor.createModel("File type not allowed for editing.", "plaintext");
+      var messageModel = monaco.editor.createModel("File type not allowed for editing.","plaintext");
       this.monacoEditor.setModel(messageModel);
       this.monacoEditor.focus();
       return;
@@ -2630,7 +2618,9 @@ codeEditor.prototype = {
 
     var content = this.getLiveWebsiteFileContent(file);
     var language = this.getMonacoLanguage(fileName);
+
     var model = monaco.editor.createModel(content, language);
+
     this.monacoEditor.setModel(model);
     this.monacoEditor.focus();
   },
@@ -2665,5 +2655,47 @@ codeEditor.prototype = {
     utils.showSnackbar("Adding file: " + fileName + "...", "info");
     console.log("Add file to LiveWebsite:", fileName);
   },
+  initializeSectionToggle: function (buttonId, panelId) {
+    var button = document.getElementById(buttonId);
+    var panel = document.getElementById(panelId);
+
+    if (!button || !panel) return;
+    button.onclick = () => {
+      if (panel.style.display === "none") {
+        panel.style.display = "block";
+        button.innerHTML = "▼";
+      } else {
+        panel.style.display = "none";
+        button.innerHTML = "▲";
+      }
+      if (this.monacoEditor) {
+        this.monacoEditor.layout();
+      }
+    };
+  },
+  initializePushQueuesPanel: function () {
+    var panel = document.getElementById("pushQueuesPanel");
+    var toggle = document.getElementById("pushQueuesToggle");
+    var expand = document.getElementById("pushQueuesExpand");
+    if (!panel) return;
+    var refreshEditor = () => {
+      if (!this.monacoEditor) return;
+      setTimeout(() => {
+        this.monacoEditor.layout();
+      }, 250);
+    };
+    if (toggle) {
+      toggle.onclick = () => {
+        panel.classList.add("collapsed");
+        refreshEditor();
+      };
+    }
+    if (expand) {
+      expand.onclick = () => {
+        panel.classList.remove("collapsed");
+        refreshEditor();
+      };
+    }
+  },  
 };
 window.editorInstance = new codeEditor();
