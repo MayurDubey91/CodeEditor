@@ -28,180 +28,207 @@
         </div>
         <div class="editor-content">
             <!-- LEFT PANEL -->
-            <div class="hierarchy-panel" id="leftPanel">
-                <!-- <div class="sidebar-toggle" id="sidebarToggle">❯</div> -->
-                <select id="modeDropdown" class="mode-dropdown"></select>
-                <!-- <div class="modes-header">
-                <span id="currentEnterpriseName"></span>
-                </div> -->
-                <div class="editor-top-bar">
-                    <select id="enterpriseDropdown" class="editor-dropdown"></select>
-                    <!-- <div class="doc-creation-section">
-                        <button id="createDocButton" class="create-doc-button">+ Create Doc</button>
-                        <div id="scriptsList" class="scripts-list"></div>
+            <div class="-liveactions-section">
+                <div class="hierarchy-panel" id="leftPanel">
+                    <!-- <div class="sidebar-toggle" id="sidebarToggle">❯</div> -->
+                    <select id="modeDropdown" class="mode-dropdown"></select>
+                    <!-- <div class="modes-header">
+                    <span id="currentEnterpriseName"></span>
                     </div> -->
-                </div>
-                <div class="hierarchy-tree" id="hierarchyTree">
-                    <div id="OT" class="ot"></div>
-                    <div id="Cat" class="cat"></div>
-                </div>
-                <div class="-context-Identifier-div" style="margin-bottom: 5px;">
-                    <input type="text" id="contextIdentifier" class="editor-input" placeholder="Enter context identifier">
-                </div>
-  
-                <div class="-context-input-box">
-                    <div class="contexts-wrapper" id="contextsWrapper" style="display:none;">
-                        <div id="contextsLoader" class="contexts-loader hidden">
-                            <img id="table-loader" src="./codeEditorimages/Loader icon.gif" class="loader-img" alt="Loading..." />
+                    <!-- Projects -->
+                    <section class="left-section">
+                        <div class="panel-section-title project-title">
+                            <span>Projects</span>
+                            <button id="projectToggle" class="project-toggle">▼</button>
                         </div>
-                        <div id="contextControls" style="display:none;">
-                            <div class="context-header">
-                                <div id="contextSourceLabel" class="context-source-label"></div>
-                                <button id="refreshContextsBtn" class="refresh-btn">↻</button>
+                        <div id="projectPanel" class="project-body">Your project is currently empty</div>
+                    </section>
+                    <!-- LiveActions -->
+                    <div class="editor-top-bar">
+                        <div class="panel-section-title">LiveActions</div>
+                        <select id="enterpriseDropdown" class="editor-dropdown"></select>
+                    </div>
+                    <div class="hierarchy-tree" id="hierarchyTree">
+                        <div id="OT" class="ot"></div>
+                        <div id="Cat" class="cat"></div>
+                    </div>
+                    <!-- LiveWebsite -->
+                    <section class="left-section">
+                        <div class="panel-section-title project-title">
+                            <span>LiveWebsite</span>
+                            <button id="liveWebsiteToggle" class="project-toggle">▼</button>
+                        </div>
+                        <div id="liveWebsitePanel">
+                            <div id="liveWebsiteView" class="live-website-container">
+                                <div class="live-website-content">
+                                    <section class="live-website-left">
+                                        <div class="enterprise-section">
+                                            <div class="enterprise-dropdown-wrapper">
+                                                <input id="liveWebsiteEnterpriseInput" type="text" class="enterprise-input" placeholder="Search enterprises..." autocomplete="off">
+                                                <div id="liveWebsiteEnterpriseDropdown" class="enterprise-dropdown-list" style="display:none;"></div>
+                                            </div>
+                                        </div>
+                                        <div class="brand-section" id="brandSection" style="display:none;">
+                                            <div class="enterprise-dropdown-wrapper">
+                                                <input id="liveWebsiteBrandInput" type="text" class="enterprise-input" placeholder="Search brands..." autocomplete="off" disabled>
+                                                <div id="liveWebsiteBrandDropdown" class="enterprise-dropdown-list" style="display:none;"></div>
+                                            </div>
+                                            <div id="liveWebsiteTree" class="livewebsite-tree"></div>
+                                        </div>
+                                        <div id="filesSection" style="display:none;margin-top:12px;">
+                                            <div id="websiteNameDisplay" class="website-name-display"></div>
+                                            <div id="filesCloud" class="files-cloud"></div>
+                                        </div>
+                                    </section>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                    
+                    <div class="-context-Identifier-div" style="margin-bottom: 5px;flex: 1;">
+                        <input type="text" id="contextIdentifier" class="editor-input" placeholder="Enter context identifier">
+                    </div>
+    
+                    <div class="-context-input-box">
+                        <div class="contexts-wrapper" id="contextsWrapper" style="display:none;">
+                            <div id="contextsLoader" class="contexts-loader hidden">
+                                <img id="table-loader" src="./codeEditorimages/Loader icon.gif" class="loader-img" alt="Loading..." />
+                            </div>
+                            <div id="contextControls" style="display:none;">
+                                <div class="context-header">
+                                    <div id="contextSourceLabel" class="context-source-label"></div>
+                                    <button id="refreshContextsBtn" class="refresh-btn">↻</button>
+                                </div>
+
+                                <div class="-context-input">
+                                    <input type="text" id="searchContexts" class="editor-input" placeholder="Search Contexts">
+                                </div>
                             </div>
 
-                            <div class="-context-input">
-                                <input type="text" id="searchContexts" class="editor-input" placeholder="Search Contexts">
-                            </div>
+                            <table id="contextsTable" class="contexts-table">
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Last Modified</th>
+                                        <th>Last Edited By</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="contextsBody"></tbody>
+                            </table>
                         </div>
-
-                        <table id="contextsTable" class="contexts-table">
-                            <thead>
-                                <tr>
-                                    <th>Name</th>
-                                    <th>Last Modified</th>
-                                    <th>Last Edited By</th>
-                                </tr>
-                            </thead>
-                            <tbody id="contextsBody"></tbody>
-                        </table>
+                    </div>
+                    <div class="bottom-bar">
+                        <input type="checkbox" id="showHiddenFiles">
+                        <label for="showHiddenFiles" style="color: #ccc; font-size: 12px;margin-right: 5px;">Script URL :</label>
+                        <input type="text" id="scriptUrlInput" class="editor-input" placeholder="Enter script URL">
+                        <button id="loadScriptButton" class="create-doc-button">Login</button>
                     </div>
                 </div>
-                
-                <div class="bottom-bar">
-                    <input type="checkbox" id="showHiddenFiles">
-                    <label for="showHiddenFiles" style="color: #ccc; font-size: 12px;margin-right: 5px;">Script URL :</label>
-                    <input type="text" id="scriptUrlInput" class="editor-input" placeholder="Enter script URL">
-                    <button id="loadScriptButton" class="create-doc-button">Login</button>
-                </div>
             </div>
-            <div class="project-panel collapsed" id="projectPanel">
-                <div class="project-header">
-                    <span>Projects</span>
-                    <button id="projectToggle" class="project-toggle">❮❮</button>
+            <!-- Push Queues Panel-->
+            <div class="pushqueues-panel collapsed" id="pushQueuesPanel">
+                <!-- Header -->
+                <div class="pushqueues-header">
+                    <span>Push Queues</span>
+                    <button id="pushQueuesToggle" class="pushqueues-toggle">❮❮</button>
                 </div>
-                <div class="project-body">Your project is currently empty</div>
-                <div class="project-collapsed-label">
-                    <button id="projectExpand" class="project-expand">❯❯</button>
-                    <span>Projects</span>
+                <!-- Body -->
+                <div class="pushqueues-body">
+                    <div id="pushQueuesContainer">
+                        <div id="pushQueuesView" class="plugin-container">
+                            <!-- Left -->
+                            <section class="clouds-section">
+                                <div id="cloudSearchBar" class="cloud-search-bar">
+                                    <div class="-full-width -relative" style="padding:5px;">
+                                        <input id="cloudSearchInput"class="Field -cloud-search-input"type="text"placeholder="Search..." />
+                                        <span id="cloudSearchClear"class="-click"style="position:absolute;right:8px;top:50%;transform:translateY(-50%);display:none;font-size:22px;">X</span>
+                                    </div>
+                                </div>
+                                <div id="cloudList" class="-cloudList"></div>
+                                <div id="addItemsBtn" class="-add-items-btn">+</div>
+                                <ul id="editContextMenu" class="-context-menu">
+                                    <li data-action="edit">Edit</li>
+                                    <li data-action="remove">Remove</li>
+                                </ul>
+                            </section>
+                            <div id="leftResizer"></div>
+                            <!-- Right -->
+                            <section class="items-section">
+                                <div id="searchWrapper" class="-search-wrapper">
+                                    <input id="tableSearch" class="Field" type="text" placeholder="Search..."style="margin-top: 5px;"/>
+                                    <span id="tableSearchClear" class="-click" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);display:none;font-size:22px;">X</span>
+                                </div>
+                                <div id="itemsList" class="-itemList -no-margin -no-padding" style="flex: 1; overflow: auto; user-select: none"></div>
+                                <div id="addItemsRightBtn" class="-items-section-plus-btn -right-items-plus-btn -click">+</div>
+                            </section>
+                        </div>
+
+                        <!-- Item Popup -->
+                        <div id="itemPopup" class="-modal-overlay">
+                            <div class="-modal-content">
+                                <form class="-padding-half -edit-form">
+                                    <h3>Create New Item</h3>
+                                    <label>Name</label>
+                                    <input type="text" id="itemName" class="Field" required data-field="Name"/>
+                                    <label>Description</label>
+                                    <textarea id="itemDesc" data-field="Description"></textarea>
+                                    <div class="-items-popup-btn-container" style="gap: 5px; padding: 0;float: right;">
+                                        <button id="cancelItemBtn" type="button">Cancel</button>
+                                        <button id="createItemBtn" type="submit" style="margin-right: 0;">Create</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+
+                        <!-- Context Popup -->
+                        <div id="contextPopup" class="-modal-overlay">
+                            <div class="-modal-content">
+                                <form class="-padding-half">
+                                    <h3>Link Contexts</h3>
+                                    <p>Put || separated context ids to link multiple actions</p>
+                                    <label>Context Id(s)</label>
+                                    <input type="text" id="contextIdsInput" class="Field" placeholder="e.g. id1||id2||id3" required/>
+                                    <div class="grid -right-aligned" style="gap: 5px; padding: 0;float: right;padding-top: 5px;">
+                                        <button id="cancelContextBtn" type="button">Cancel</button>
+                                        <button id="linkContextBtn" type="submit" style="margin-right: 0;">Link</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+
+                        <!-- Group Popup -->
+                        <!-- <div id="groupPopup" class="-modal-overlay -hidden">
+                            ...
+                        </div> -->
+
+                        <!-- Share Popup -->
+                        <!-- <div id="shared" class="-modal-overlay -hidden">
+                            ...
+                        </div> -->
+
+                        <!-- Loader -->
+                        <div id="loader-container" class="loader-content -hidden">
+                            <img id="table-loader"src="./codeEditorimages/Loader icon.gif">
+                        </div>
+                    </div>
+                </div>
+                <!-- Collapse Label -->
+                <div class="pushqueues-collapsed-label">
+                    <button id="pushQueuesExpand"class="pushqueues-expand">❯❯</button>
+                    <span>Push Queues</span>
                 </div>
             </div>
             <!-- RIGHT PANEL -->
             <div class="editor-main">
                 <div id="maintabsContainer" class="main-tabs-container">
-                    <div id="pushQueuesTab" class="-push-queues-tab">Push Queues</div>
-                    <div id="liveWebsite" class="live-website-tab">LiveWebsite</div>
+                    <!-- <div id="pushQueuesTab" class="-push-queues-tab">Push Queues</div> -->
+                    <!-- <div id="liveWebsite" class="live-website-tab">LiveWebsite</div> -->
                     <div id="tabsContainer" class="tabs-container"></div>
                 </div>
                 <!-- <div id="tabsContent"></div> -->
                 <div id="monacoEditor"></div>
-                <div id="pushQueuesContainer" style="display:none;">
-                    <div id="pushQueuesView" class="plugin-container">
-                        <!-- Left section -->
-                        <section class="clouds-section">
-                            <div id="cloudSearchBar" class="cloud-search-bar">
-                                <div class="-full-width -relative" style="padding: 5px;">
-                                    <input id="cloudSearchInput" class="Field -cloud-search-input" type="text" placeholder="Search..."/>
-                                    <span id="cloudSearchClear" class="-click" style="position:absolute; right:8px; top:50%; transform:translateY(-50%);display:none; font-weight:bold; font-size:23px;">
-                                        X
-                                    </span>
-                                </div>
-                            </div>
-                            <div id="cloudList" class="-cloudList"></div>
-                            <div id="addItemsBtn" class="-add-items-btn">+</div>
-                            <ul id="editContextMenu" class="-context-menu">
-                                <li data-action="edit" class="-click">Edit</li>
-                                <li data-action="remove" class="-click">Remove</li>
-                            </ul>
-                            <div id="editPopup" class="-modal-overlay" style="display: none">
-                                <div class="-modal-content">
-                                    <form class="-padding-half">
-                                        <h3>Edit Item</h3>
-                                        <label>Name</label>
-                                        <input type="text" id="editItemName" class="Field" style="margin-bottom: 10px; padding: 5px" data-field="Name" required/>
-                                        <label>Description</label>
-                                        <textarea id="editItemDesc" style="margin-bottom: 10px; padding: 5px" data-field="Description"></textarea>
-                                        <div class="grid -right-aligned" style="gap: 5px; padding: 0;">
-                                            <button id="cancelEditBtn" type="button">Cancel</button>
-                                            <button id="saveEditBtn" type="button">Save</button>
-                                        </div>
-                                    </form>
-                                </div>
-                            </div>
-                        </section>
-                        <div id="leftResizer" class="collapsed"></div>
-                        <!-- Right section -->
-                        <section class="items-section" style="flex: 1; min-height: 0">
-                            <div id="searchWrapper" class="-search-wrapper">
-                                <input type="text" id="tableSearch" class="Field" placeholder="Search" style="margin-top: 5px;"/>
-                                <span id="tableSearchClear" class="-click" style="position:absolute; right:8px; top:50%; transform:translateY(-50%);display:none; font-weight:bold; font-size:23px;">
-                                    X   
-                                </span>
-                            </div>
-                            <div id="itemsList" class="-itemList -no-margin -no-padding" style="flex: 1; overflow: auto; user-select: none"></div>
-                              <div id="addItemsRightBtn" class="-items-section-plus-btn -right-items-plus-btn -click">+</div>
-                            <!-- Context Menu for Right -->
-                            <!-- <div id="contextMenu" class="-context-menu -reminder-context-menu">
-                                <ul class="-no-margin">
-                                    <li id="removeCloudItem" class="-click">Remove</li>
-                                    <li id="pushQA" class="-click">Push to QA</li>
-                                    <li id="pushPrerelease" class="-click">Push to Prerelease</li>
-                                    <li id="pushLive" class="-click">Push to Live</li>
-                                    <li id="copyId" class="-click">Copy Id</li>
-                                </ul>
-                            </div> -->
-                            <!-- Buttons div outside the right section -->
-                            <!-- <div class="-buttons-div content -right-align">
-                                <div id="lastPushInfo" class="-last-push-info"></div>
-                                <button id="pushQABtn" type="button" class="-no-margin">Push to QA</button>
-                                <button id="pushPrereleaseBtn" type="button" class="-no-margin">Push to Prerelease</button>
-                                <button id="pushLiveBtn" type="button" class="-no-margin">Push to Live</button>
-                            </div> -->
-                        </section>
-                    </div>
+            </div>
 
-                    <!-- Left Popup (Create Item) -->
-                    <div id="itemPopup" class="-modal-overlay">
-                        <div class="-modal-content">
-                            <form class="-padding-half -edit-form">
-                                <h3>Create New Item</h3>
-                                <label>Name</label>
-                                <input type="text" id="itemName" class="Field" required data-field="Name"/>
-                                <label>Description</label>
-                                <textarea id="itemDesc" data-field="Description"></textarea>
-                                <div class="-items-popup-btn-container" style="gap: 5px; padding: 0;float: right;">
-                                    <button id="cancelItemBtn" type="button">Cancel</button>
-                                    <button id="createItemBtn" type="submit" style="margin-right: 0;">Create</button>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-
-                    <!-- Right Popup (Context Id Linking) -->
-                    <div id="contextPopup" class="-modal-overlay">
-                        <div class="-modal-content">
-                            <form class="-padding-half">
-                                <h3>Link Contexts</h3>
-                                <p>Put || separated context ids to link multiple actions</p>
-                                <label>Context Id(s)</label>
-                                <input type="text" id="contextIdsInput" class="Field" placeholder="e.g. id1||id2||id3" required/>
-                                <div class="grid -right-aligned" style="gap: 5px; padding: 0;float: right;padding-top: 5px;">
-                                    <button id="cancelContextBtn" type="button">Cancel</button>
-                                    <button id="linkContextBtn" type="submit" style="margin-right: 0;">Link</button>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
                     <div id="groupPopup" class="-modal-overlay -hidden">
                         <div class="-modal-content">
                             <div class="-popup-header">
@@ -239,37 +266,6 @@
                     </div>
                     <div id="loader-container" class="loader-content -hidden">
                         <img id="table-loader" src="./codeEditorimages/Loader icon.gif" class="-loader-img" alt="Loading..."/>
-                    </div>
-                </div>
-                <div id="liveWebsiteContainer" style="display:none;">
-                    <div id="liveWebsiteView" class="live-website-container">
-                        <div class="live-website-content">
-                            <!-- Left Section -->
-                            <section class="live-website-left">
-                                <div class="enterprise-section">
-                                    <!-- <label for="liveWebsiteEnterpriseInput" class="enterprise-label">
-                                        Select Enterprise
-                                    </label> -->
-                                    <div class="enterprise-dropdown-wrapper">
-                                        <input id="liveWebsiteEnterpriseInput" type="text" class="enterprise-input" placeholder="Search enterprises..." autocomplete="off"/>
-                                        <div id="liveWebsiteEnterpriseDropdown" class="enterprise-dropdown-list" style="display:none;"></div>
-                                    </div>
-                                    <!-- <div id="selectedEnterpriseDisplay" class="selected-enterprise-display"></div> -->
-                                </div>
-                                <div class="brand-section" id="brandSection" style="display:none;">
-                                    <div class="enterprise-dropdown-wrapper">
-                                        <input id="liveWebsiteBrandInput" type="text" class="enterprise-input"placeholder="Search brands..."autocomplete="off" disabled />
-                                        <div id="liveWebsiteBrandDropdown" class="enterprise-dropdown-list" style="display:none;"></div>
-                                    </div>
-                                    <div id="liveWebsiteTree" class="livewebsite-tree"></div>
-                                </div>
-                                <div id="filesSection" style="display:none; margin-top: 12px;">
-                                    <div id="websiteNameDisplay" class="website-name-display"></div>
-                                    <div id="filesCloud" class="files-cloud"></div>
-                                </div>
-                            </section>
-                            <section class="live-website-right"></section>
-                        </div>
                     </div>
                 </div>
                 <div id="executionPanel" class="execution-panel hidden">
