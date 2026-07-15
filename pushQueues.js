@@ -17,6 +17,7 @@
   };
   pushQueuesContent.prototype = {
     init: async function () {
+        codeEditor.activeLeftPanelTab = "pushQueues";
       await this.loginToLiveHRMS();
       this.loadMainCloud();
       //this.toggleAddButtonVisibility();
@@ -31,39 +32,64 @@
     attachEvents: function () {
         this.attachClickEvents();
         this.attachSubmitEvents();
-        document.addEventListener("click", function () {
+
+        document.onclick = function () {
             var menu = document.getElementById("editContextMenu");
+
             if (menu) {
                 menu.style.display = "none";
             }
-        });
+        };
     },
-    attachClickEvents : function () {
+    attachClickEvents: function () {
         var addItemBtn = document.getElementById("addItemsBtn");
         var editItemRightBtn = document.getElementById("addItemsRightBtn");
         var cancelItemBtn = document.getElementById("cancelItemBtn");
         var itemPopup = document.getElementById("itemPopup");
         var contextPopup = document.getElementById("contextPopup");
         var cancelContextBtn = document.getElementById("cancelContextBtn");
-        cancelContextBtn.addEventListener("click", function () {
-            contextPopup.style.display = "none";
-        });
-        addItemBtn.addEventListener("click", function () {
-            console.log("Add Item button clicked");
-            itemPopup.style.display = "flex";
-        });   
-        cancelItemBtn.addEventListener("click", function () {
-            itemPopup.style.display = "none";
-        });
-        editItemRightBtn.addEventListener("click", function () {
-            console.log("Edit Item button clicked");
-            contextPopup.style.display = "flex";
-        });
-        contextPopup.addEventListener("click", function (event) {
-            if (event.target === contextPopup) {
+
+        if (cancelContextBtn && contextPopup) {
+            cancelContextBtn.onclick = function () {
                 contextPopup.style.display = "none";
+            };
+        }
+
+        if (addItemBtn && itemPopup) {
+            addItemBtn.onclick = function () {
+                console.log("Add Item button clicked");
+                itemPopup.style.display = "flex";
+            };
+        }
+
+        if (cancelItemBtn && itemPopup) {
+            cancelItemBtn.onclick = function () {
+                itemPopup.style.display = "none";
+            };
+        }
+        document.addEventListener("click", function (e) {
+            if (e.target && e.target.id === "addItemsRightBtn") {
+                var contextPopup =document.getElementById("contextPopup");
+                if (contextPopup) {
+                    contextPopup.style.display = "flex";
+                }
             }
         });
+
+        // if (editItemRightBtn && contextPopup) {
+        //     editItemRightBtn.onclick = function () {
+        //         console.log("Edit Item button clicked");
+        //         contextPopup.style.display = "flex";
+        //     };
+        // }
+
+        if (contextPopup) {
+            contextPopup.onclick = function (event) {
+                if (event.target === contextPopup) {
+                    contextPopup.style.display = "none";
+                }
+            };
+        }
     },
     loginToLiveHRMS : async function() {
       var _url = GlobalDomain + "/Login.do";
@@ -82,163 +108,291 @@
     },
     loadMainCloud: function (refresh) {
         var self = this;
-        var cloudList = document.getElementById("cloudList");
-        var itemsList = document.getElementById("itemsList");
-        if (cloudList) cloudList.innerHTML = "";
-        if (itemsList) itemsList.innerHTML = "";
 
-        var userDRI = LIVEHRMS_USER_DATA["Direct Resource Identifier"];
-        utils.getCloud(userDRI, self.useCloudName)
+        var cloudList = document.getElementById("cloudList");
+        //var itemsList = document.getElementById("itemsList");
+        var tableContainer = document.getElementById("pushQueueItemsTableContainer");
+
+        if (cloudList) {
+            cloudList.innerHTML = "";
+        }
+
+        // if (itemsList) {
+        //     itemsList.innerHTML = "<div class='no-items'>Select a Push Queue</div>";
+        // }
+        if (tableContainer) {
+            tableContainer.innerHTML = "<div class='no-items'>Select a Push Queue</div>";
+        }
+        // Reset selected queue
+        self.cloudDRI = null;
+        self.tableItems = [];
+
+        var userDRI = LIVEHRMS_USER_DATA && LIVEHRMS_USER_DATA["Direct Resource Identifier"];
+        if (!userDRI) {
+            console.warn("User DRI not found.");
+
+            if (cloudList) {
+                cloudList.innerHTML = "<div class='no-items'>User DRI Not Found</div>";
+            }
+            return;
+        }
+
+        utils.getCloud(userDRI,self.useCloudName)
         .then(function (cloud) {
             if (!cloud || !cloud.DRI) {
-                cloudList.innerHTML = "<li>No Push Queues Found</li>";
-                return;
+                if (cloudList) {
+                    cloudList.innerHTML = "<div class='no-items'>No Push Queues Found</div>";
+                }
+                return null;
             }
             self.mainCloudDRI = cloud.DRI;
-            return utils.getItems(cloud.DRI,"Name||Description||Created By||Created On",true,1,9999);
+            return utils.getItems(cloud.DRI, "Name||Description||Created By||Created On",true, 1,9999);
         })
         .then(function (data) {
-            if (!data) return;
+            if (!data) {
+                return;
+            }
             var clouds = data.Results || [];
+            self.pushQueueClouds = clouds;
             self.drawCloudList(clouds);
-            self.setupCloudSearch(clouds, self.mainCloudDRI);
+            self.setupCloudSearch(clouds);
         })
         .catch(function (err) {
-            console.error(err);
+            console.error("Push Queues Load Error:",err);
+            if (cloudList) {
+                cloudList.innerHTML = "<div class='no-items'>Failed to load Push Queues</div>";
+            }
         });
     },
-    drawCloudList: function (items) {
-        var self = this;
+    drawCloudList: async function (items) {
+
         var cloudList = document.getElementById("cloudList");
-        cloudList.innerHTML = "";
-        if (!items.length) {
-            cloudList.innerHTML = "<li>No Push Queues Found</li>";
+
+        if (!cloudList) {
             return;
         }
-        items.forEach(function (item, index) {
-            var li = document.createElement("li");
 
-            li.className = "-cloud-item";
-            li.textContent = decodeURIComponent(item.Name || "");
-            li.dataset.dri = item.DRI;
-            li.addEventListener("contextmenu", function (e) {
-                e.preventDefault();
-                e.stopPropagation();
+        cloudList.innerHTML = "";
 
-                var editContextMenu = document.getElementById("editContextMenu");
-                if (!editContextMenu) return;
+        var self = this;
 
-                // Save selected item
-                editContextMenu.dataset.targetDri = item.DRI;
-                editContextMenu.dataset.targetId = item.Id;
-                editContextMenu.dataset.targetName = item.Name;
-                editContextMenu.dataset.targetDescription = item.Description || "";
+        var firstRow = null;
+        var firstItem = null;
+        var firstCloudDRI = null;
 
-                // Show menu
-                editContextMenu.style.display = "block";
-                editContextMenu.style.position = "fixed";
-                editContextMenu.style.left = e.clientX + "px";
-                editContextMenu.style.top = e.clientY + "px";
-                editContextMenu.style.zIndex = "9999";
-            });
+        (items || []).forEach(function (item, index) {
+            var row = document.createElement("div");
+            row.className = "tree-node -cloud-item";
+            var name = item.Name ||"Unnamed";
+            var cloudDRI = item.DRI ||item["Direct Resource Identifier"] ||"";
 
-            // Left click
-            li.onclick = function () {
-                document.querySelectorAll("#cloudList li").forEach(function (x) {
+
+            row.innerHTML = `<span class="label">${name}</span>`;
+
+            row.onclick = async function () {
+                cloudList.querySelectorAll(".-cloud-item").forEach(function (x) {
+                    x.classList.remove("selected");
                     x.classList.remove("active-item");
                 });
-                li.classList.add("active-item");
-                self.cloudDRI = item.DRI;
-                self.loadTable(item.DRI);
+
+                row.classList.add("selected");
+                row.classList.add("active-item");
+
+                self.selectedCloud = item;
+                self.selectedCloudName = name;
+                console.log("Selected Queue:",item);
+                console.log("Queue DRI:",cloudDRI);
+
+                if (!cloudDRI) {
+                    console.warn("Queue DRI missing:",item);
+                    return;
+                }
+                await self.loadTable(cloudDRI);
             };
 
-            // Right click
-            li.oncontextmenu = function (e) {
-                e.preventDefault();
-                var menu = document.getElementById("editContextMenu");
-                menu.dataset.targetDri = item.DRI;
-                menu.dataset.targetId = item.Id;
-                menu.dataset.targetName = decodeURIComponent(item.Name || "");
-                menu.dataset.targetDescription = decodeURIComponent(item.Description || "");
-
-                menu.style.display = "block";
-                menu.style.left = e.pageX + "px";
-                menu.style.top = e.pageY + "px";
-            };
-
-            cloudList.appendChild(li);
-            if (index === 0) {
-                li.click();
+            cloudList.appendChild(row);
+            // Save first valid cloud
+            if (!firstRow && cloudDRI) {
+                firstRow = row;
+                firstItem = item;
+                firstCloudDRI = cloudDRI;
             }
         });
-        document.addEventListener("click", function () {
-            var menu = document.getElementById("editContextMenu");
-            if (menu) {
-                menu.style.display = "none";
-            }
-        });
-    },
-    loadTable: function (cloudDRI) {
-        var self = this;
-        var itemsList = document.getElementById("itemsList");
-        itemsList.innerHTML = "";
-        utils.getItems(cloudDRI, "Name||Created By||Created On", true, 1, 9999)
-        .then(function (data) {
-            var items = data.Results || [];
-            // Save items for search
-            self.tableItems = items;
-            self.renderTable(items);
-            self.setupTableSearch();
-        });
-    },
-    renderTable: function (items) {
-        var itemsList = document.getElementById("itemsList");
 
-        if (!items.length) {
-            itemsList.innerHTML = "<div>No Items Found</div>";
-            return;
+
+        // Default active cloud
+        if (firstRow &&firstItem &&firstCloudDRI) {
+            firstRow.classList.add("selected");
+            firstRow.classList.add("active-item");
+            self.selectedCloud = firstItem;
+            self.selectedCloudName = firstItem.Name ||"Unnamed";
+            console.log("Default Selected Queue:",firstItem);
+            await self.loadTable(firstCloudDRI);
         }
 
-        var html = "<table border='1' width='100%'>";
-        html += "<tr><th>Name</th><th>Created By</th><th>Created On</th></tr>";
-
-        items.forEach(function (item, index) {
-            html += "<tr class='table-row' data-index='" + index + "'>";
-            html += "<td>" + (item.Name || "") + "</td>";
-            html += "<td>" + (item["Created By"] || "") + "</td>";
-            html += "<td>" + (item["Created On"] || "") + "</td>";
-            html += "</tr>";
-        });
-
-        html += "</table>";
-
-        itemsList.innerHTML = html;
-        var self = this;
-
-        itemsList.querySelectorAll(".table-row").forEach(function (row) {
-            row.addEventListener("contextmenu", function (e) {
-                e.preventDefault();
-                e.stopPropagation();
-
-                var index = this.dataset.index;
-                var item = items[index];
-
-                var menu = document.getElementById("editContextMenu");
-                if (!menu) return;
-
-                menu.dataset.targetDri = item.DRI;
-                menu.dataset.targetId = item.Id;
-                menu.dataset.targetName = item.Name;
-                menu.dataset.targetDescription = item.Description || "";
-
-                menu.style.display = "block";
-                menu.style.position = "fixed";
-                menu.style.left = e.clientX + "px";
-                menu.style.top = e.clientY + "px";
-                menu.style.zIndex = "9999";
-            });
-        });
     },
+    loadTable: async function (cloudDRI) {
+    if (!cloudDRI) {
+        console.warn("Queue DRI missing.");
+        return;
+    }
+
+    var box = document.getElementById("commonContextBox");
+    var commonLabel = document.getElementById("commonSourceLabel");
+    var searchInput = document.getElementById("commonSearchInput");
+    var tableContainer = document.getElementById("commonTableContainer");
+    var addItemsRightBtn = document.getElementById("addItemsRightBtn");
+    var contextPopup = document.getElementById("contextPopup");
+
+    if (!box || !tableContainer) {
+        return;
+    }
+
+    box.style.display = "block";
+
+    if (commonLabel) {
+        commonLabel.textContent = this.selectedCloudName || "";
+    }
+
+    if (searchInput) {
+        searchInput.value = "";
+        searchInput.placeholder = "Search Items";
+        searchInput.oninput = null;
+    }
+
+    if (addItemsRightBtn) {
+        addItemsRightBtn.style.display = "flex";
+
+        addItemsRightBtn.onclick = function () {
+            if (contextPopup) {
+                contextPopup.style.display = "flex";
+            }
+        };
+    }
+
+    tableContainer.innerHTML =
+        "<div class='no-items'>Loading...</div>";
+
+    this.cloudDRI = cloudDRI;
+
+    try {
+        console.log("Loading Queue Items:", cloudDRI);
+
+        var data = await utils.getItems(
+            cloudDRI,
+            "Name||Created By||Created On",
+            true,
+            1,
+            9999
+        );
+
+        var items = data && data.Results
+            ? data.Results
+            : [];
+
+        this.tableItems = items;
+
+        this.renderTable(items);
+        this.setupTableSearch();
+    }
+    catch (e) {
+        console.error("Push Queue Items Load Error:", e);
+
+        this.tableItems = [];
+        this.renderTable([]);
+    }
+},
+resetCommonContextBox: function () {
+    var box = document.getElementById("commonContextBox");
+    var label = document.getElementById("commonSourceLabel");
+    var search = document.getElementById("commonSearchInput");
+    var headerActions = document.getElementById("commonHeaderActions");
+    var searchActions = document.getElementById("commonSearchActions");
+    var container = document.getElementById("commonTableContainer");
+    var addItemsRightBtn = document.getElementById("addItemsRightBtn");
+
+    if (!box) return;
+
+    box.style.display = "none";
+
+    if (label) {
+        label.textContent = "";
+    }
+
+    if (search) {
+        search.value = "";
+        search.placeholder = "Search";
+        search.oninput = null;
+    }
+
+    if (headerActions) {
+        headerActions.innerHTML = "";
+    }
+
+    if (searchActions) {
+        searchActions.innerHTML = "";
+    }
+
+    if (container) {
+        container.innerHTML = "";
+    }
+
+    if (addItemsRightBtn) {
+        addItemsRightBtn.style.display = "none";
+        addItemsRightBtn.onclick = null;
+    }
+},
+
+
+renderTable: function (items) {
+    var self = this;
+    var container = document.getElementById("commonTableContainer");
+
+    if (!container) {
+        console.warn("commonTableContainer not found.");
+        return;
+    }
+
+    this.currentTableItems = items || [];
+
+    new drawTable({
+        container: container,
+        data: this.currentTableItems,
+
+        fields: [
+            {
+                label: "Name",
+                field: "Name"
+            },
+            {
+                label: "Created By",
+                render: function (item) {
+                    return item["Created By"] || item.CreatedBy || "";
+                }
+            },
+            {
+                label: "Created On",
+                render: function (item) {
+                    return item["Created On"] || item.CreatedOn || "";
+                }
+            }
+        ],
+
+        emptyText: "No Items Found",
+
+        onRowClick: function (item, row) {
+            container.querySelectorAll("tbody tr").forEach(function (x) {
+                x.classList.remove("selected");
+            });
+
+            row.classList.add("selected");
+
+            self.selectedTableItem = item;
+
+            console.log("Selected Push Queue Item:", item);
+        }
+    });
+},
     createItems: function (selectedCloudDRI, name, desc) {
       var self = this;
       var fieldsArray = [];
@@ -345,92 +499,167 @@
         document.getElementById("contextIdsInput").value = "";
       });
     },
-    setupCloudSearch: function (clouds, cloudDRI) {
-        var self = this;
-        var searchInput = document.getElementById("cloudSearchInput");
-        var clearBtn = document.getElementById("cloudSearchClear");
+    setupCloudSearch: function (clouds) {
+    var self = this;
 
-        if (!searchInput) return;
+    var searchInput =
+        document.getElementById(
+            "cloudSearchInput"
+        );
 
-        searchInput.oninput = function () {
-            var query = this.value.trim().toLowerCase();
+    var clearBtn =
+        document.getElementById(
+            "cloudSearchClear"
+        );
+
+    if (!searchInput) {
+        return;
+    }
+
+
+
+    searchInput.oninput =
+        function () {
+
+            var query =
+                this.value
+                    .trim()
+                    .toLowerCase();
+
+
 
             if (clearBtn) {
-                clearBtn.style.display = query.length > 0 ? "inline" : "none";
+
+                clearBtn.style.display =
+                    query.length > 0
+                        ? "inline"
+                        : "none";
             }
 
-            if (query === "") {
-                self.drawCloudList(clouds);
+
+
+            if (!query) {
+
+                self.drawCloudList(
+                    clouds
+                );
+
                 return;
             }
 
-            var filtered = clouds.filter(function (item) {
-                return (
-                    (item.Name && item.Name.toLowerCase().includes(query)) ||
-                    (item.Description && item.Description.toLowerCase().includes(query))
-                );
-            });
 
-            self.drawCloudList(filtered);
+
+            var filtered =
+                clouds.filter(
+                    function (item) {
+
+                        var name =
+                            item.Name || "";
+
+                        var description =
+                            item.Description || "";
+
+                        try {
+                            name =
+                                decodeURIComponent(
+                                    name
+                                );
+                        }
+                        catch (e) {
+                        }
+
+                        try {
+                            description =
+                                decodeURIComponent(
+                                    description
+                                );
+                        }
+                        catch (e) {
+                        }
+
+                        return (
+                            name
+                                .toLowerCase()
+                                .includes(query) ||
+
+                            description
+                                .toLowerCase()
+                                .includes(query)
+                        );
+                    }
+                );
+
+
+
+            self.drawCloudList(
+                filtered
+            );
         };
 
-        // Clear button
-        if (clearBtn) {
-            clearBtn.onclick = function () {
-                searchInput.value = "";
-                clearBtn.style.display = "none";
-                self.drawCloudList(clouds);
+
+
+    if (clearBtn) {
+
+        clearBtn.onclick =
+            function () {
+
+                searchInput.value =
+                    "";
+
+                clearBtn.style.display =
+                    "none";
+
+                self.drawCloudList(
+                    clouds
+                );
+
                 searchInput.focus();
             };
-        }
-    },
+    }
+},
     setupTableSearch: function () {
-        var self = this;
-        var input = document.getElementById("tableSearch");
-        var clearBtn = document.getElementById("tableSearchClear");
+    var self = this;
+    var input = document.getElementById("commonSearchInput");
 
-        if (!input) return;
+    if (!input) {
+        return;
+    }
 
-        input.oninput = function () {
+    input.value = "";
 
-            var query = this.value.trim().toLowerCase();
+    input.onclick = function (e) {
+        e.stopPropagation();
+    };
 
-            // Show / Hide clear button
-            if (clearBtn) {
-                clearBtn.style.display = query.length > 0 ? "inline" : "none";
-            }
+    input.onmousedown = function (e) {
+        e.stopPropagation();
+    };
 
-            if (query === "") {
-                self.renderTable(self.tableItems);
-                return;
-            }
+    input.oninput = function (e) {
+        e.stopPropagation();
 
-            var filtered = self.tableItems.filter(function (item) {
-                return (
-                    (item.Name &&
-                        item.Name.toLowerCase().includes(query)) ||
+        var query = this.value.trim().toLowerCase();
 
-                    (item["Created By"] &&
-                        item["Created By"].toLowerCase().includes(query)) ||
-
-                    (item["Created On"] &&
-                        item["Created On"].toLowerCase().includes(query))
-                );
-            });
-
-            self.renderTable(filtered);
-        };
-
-        // Clear button click
-        if (clearBtn) {
-            clearBtn.onclick = function () {
-                input.value = "";
-                clearBtn.style.display = "none";
-                self.renderTable(self.tableItems);
-                input.focus();
-            };
+        if (!query) {
+            self.renderTable(self.tableItems || []);
+            return;
         }
-    },
+
+        var filtered = (self.tableItems || []).filter(function (item) {
+            var name = String(item.Name || "").toLowerCase();
+            var createdBy = String(item["Created By"] || item.CreatedBy || "").toLowerCase();
+            var createdOn = String(item["Created On"] || item.CreatedOn || "").toLowerCase();
+
+            return (
+                name.includes(query) ||
+                createdBy.includes(query) ||
+                createdOn.includes(query)
+            );
+        });
+
+        self.renderTable(filtered);
+    };
+},
     removeItem: function (cloudDRI, itemId, source) {
         console.log("Removing", cloudDRI, itemId);
         var self = this;
