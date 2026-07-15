@@ -35,6 +35,7 @@ utils.showContextLoader = function () {
     loader.style.display = "flex";
   }
 };
+
 utils.hideContextLoader = function () {
   var loader = document.getElementById("contextsLoader");
   if (loader) {
@@ -655,4 +656,85 @@ utils.bindScroll = function (options) {
       });
     }
   });
+};
+var drawTable = function (O) {
+  this.container = O.container;
+  this.data = O.data || [];
+  this.fields = O.fields || [];
+  this.emptyText = O.emptyText || "No Items Found";
+  this.onRowClick = O.onRowClick || null;
+  this.getRowClass = O.getRowClass || null;
+
+  if (!this.container)return;
+  this.init();
+};
+
+drawTable.prototype = {
+  init: function () {
+    this.render();
+  },
+  render: function () {
+    if (!this.container)return;
+    this.container.innerHTML = "";
+    var table = document.createElement("table");
+    table.className = "contexts-table";
+    table.appendChild(this.drawHeader());
+    table.appendChild(this.drawBody());
+    this.container.appendChild(table);
+  },
+  drawHeader: function () {
+    var thead = document.createElement("thead");
+    var tr = document.createElement("tr");
+    this.fields.forEach(function (field) {
+      var th = document.createElement("th");
+      th.textContent = field.label || "";
+      tr.appendChild(th);
+    });
+    thead.appendChild(tr);
+    return thead;
+  },
+  drawBody: function () {
+    var self = this;
+    var tbody = document.createElement("tbody");
+    if (!this.data.length) {
+      var tr = document.createElement("tr");
+      var td = document.createElement("td");
+      td.colSpan = this.fields.length;
+      td.className = "table-empty";
+      td.textContent = this.emptyText;
+      tr.appendChild(td);
+      tbody.appendChild(tr);
+      return tbody;
+    }
+
+    this.data.forEach(function (item, index) {
+      var tr = document.createElement("tr");
+      tr.dataset.index = index;
+      if (item.Id) tr.dataset.id = item.Id;
+      if (self.getRowClass) {
+
+        var rowClass = self.getRowClass(item);
+        if (rowClass)tr.classList.add(rowClass);
+      }
+      self.fields.forEach(function (field) {
+        var td = document.createElement("td");
+        var value;
+        if (field.render) {
+          value = field.render(item, index);
+        }
+        else {
+          value = item[field.field];
+        }
+        td.textContent = value === undefined ||value === null ? "" : value;
+        tr.appendChild(td);
+      });
+      if (self.onRowClick) {
+        tr.addEventListener("click",function (event) {
+          self.onRowClick(item,tr,event);
+        });
+      }
+      tbody.appendChild(tr);
+    });
+    return tbody;
+  }
 };

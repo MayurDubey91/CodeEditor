@@ -1,8 +1,10 @@
-const { contextBridge, ipcRenderer } = require('electron');
+const { contextBridge, ipcRenderer } = require("electron");
 
-contextBridge.exposeInMainWorld('electron', {
-  versions: process.versions,
-  saveFile: (data) => ipcRenderer.invoke("save-file", data),
-  send: (channel, data) => ipcRenderer.send(channel, data),
-  on: (channel, callback) => ipcRenderer.on(channel, (event, ...args) => callback(...args)),
+contextBridge.exposeInMainWorld("electronAPI", {
+    getProjects: () => ipcRenderer.invoke("getProjects"),
+    readProjectFile: (filePath) => ipcRenderer.invoke("readProjectFile", filePath),
+    createProjectFolder: (folderPath) => ipcRenderer.invoke("createProjectFolder", folderPath),
+    createProjectFile: (filePath) => ipcRenderer.invoke("createProjectFile", filePath),
+    saveFile: (data) =>ipcRenderer.invoke("saveFile", data),
+    fileExists: (filePath) =>ipcRenderer.invoke("fileExists", filePath)
 });
