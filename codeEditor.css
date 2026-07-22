@@ -1328,14 +1328,14 @@ body.logged-in #loginOverlay {
   padding: 14px 16px;
   border: 0;
   border-radius: 12px;
-  background: #3b6cff;
+  background: #2d333b;
   color: #fff;
   font-size: 15px;
   font-weight: 600;
   cursor: pointer;
 }
 .login-submit:hover {
-  background: #3258d3;
+  background: #3a3a3a;
 }
 .login-error {
   min-height: 18px;
@@ -1358,7 +1358,6 @@ body.logged-in #loginOverlay {
   border-right: 1px solid #444;
   background: #1f2430;
 }
-
 .hierarchy-panel {
   display: flex;
   flex-direction: column;
@@ -1385,7 +1384,6 @@ body.logged-in #loginOverlay {
   border-bottom: 1px solid #3c3c3c;
   background: #252526;
 }
-
 .left-panel-tabs {
   display: flex;
   align-items: center;
@@ -1393,7 +1391,6 @@ body.logged-in #loginOverlay {
   padding: 5px;
   background: #252526;
 }
-
 .left-panel-tab-button {
   flex: 1;
   min-width: 0;
@@ -1406,18 +1403,15 @@ body.logged-in #loginOverlay {
   text-align: center;
   cursor: pointer;
 }
-
 .left-panel-tab-button:hover {
   background: #3a3a3a;
   color: #fff;
 }
-
 .left-panel-tab-button.active {
   border-color: #2d333b;
   background: #2d333b;
   color: #fff;
 }
-
 .left-panel-bottom-content-container {
   flex: 1;
   min-height: 0;
@@ -1425,7 +1419,6 @@ body.logged-in #loginOverlay {
   flex-direction: column;
   overflow: hidden;
 }
-
 .left-panel-tab-panels {
   flex: 1;
   min-height: 0;
@@ -1453,44 +1446,32 @@ body.logged-in #loginOverlay {
 .project-header,.context-header,.panel-section-title {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 5px;
   margin: 0;
   color: #fff;
 }
-
 .context-header {
   padding: 10px 0px 0px 5px;
   justify-content: space-between;
 }
-
 .context-source-label {
   flex: 1;
   padding: 5px 0;
   color: #ccc;
   font-size: 12px;
 }
-
-.toggle,
-.project-folder-label,
-.label {
+.toggle,.project-folder-label,.label {
   cursor: pointer;
 }
-
 .tree-selected {
   border-radius: 2px;
   background: #2d333b;
   color: #fff;
 }
-
-.tree-selected .label,
-.tree-selected .toggle {
+.tree-selected .label,.tree-selected .toggle {
   color: #fff;
 }
-
-/* =========================================================
-   LIVE ACTION CONTROLS
-========================================================= */
-
 .editor-top-bar {
   display: flex;
   flex-direction: column;
@@ -1508,40 +1489,39 @@ body.logged-in #loginOverlay {
   text-align: center;
   outline: none;
 }
-
 .-context-identifier-editor-dropdown-div {
   display: flex;
   flex-direction: row;
   align-items: center;
 }
-
-.editor-dropdown,
-.editor-input,
-.enterprise-input {
+.-context-identifier-editor-dropdown-div .enterprise-dropdown-wrapper .enterprise-input {
+  height: 28px;
+  padding: 0 4px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  box-sizing: border-box;
+  user-select: none;
+  background: #fff;
+}
+.editor-dropdown,.editor-input,.enterprise-input {
   width: 100%;
   min-width: 0;
   box-sizing: border-box;
-  padding: 7px;
+  padding: 5px;
   outline: none;
 }
-
-.editor-dropdown:focus,
-.editor-input:focus,
-.enterprise-input:focus {
+.editor-dropdown:focus,.editor-input:focus,.enterprise-input:focus {
   border-color: #007acc;
 }
-
 .-context-input {
   display: flex;
   flex-direction: row;
   align-items: center;
   width: 100%;
 }
-
-.-context-input-box,
-#projectFilesSection,
-#filesSection,
-#pushQueueItemsSection {
+.-context-input-box,#projectFilesSection,#filesSection,#pushQueueItemsSection {
   flex: 0 0 430px;
   height: 430px;
   min-height: 430px;
@@ -1553,11 +1533,6 @@ body.logged-in #loginOverlay {
   display: flex;
   flex-direction: row;
 }
-
-/* =========================================================
-   TREE
-========================================================= */
-
 .hierarchy-tree {
   height: 220px;
   overflow: auto;
@@ -1583,18 +1558,12 @@ body.logged-in #loginOverlay {
 .tree-item.expanded > .tree-item-toggle {
   color: #fff;
 }
-
-/* =========================================================
-   CONTEXTS
-========================================================= */
-
-.contexts-wrapper,
-#projectFilesWrapper {
-    display: flex;
-    flex-direction: column;
-    height: 100%;
-    min-height: 0;
-    overflow: hidden;
+.contexts-wrapper,#projectFilesWrapper {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .left-panel-contexts-container {
@@ -1605,7 +1574,6 @@ body.logged-in #loginOverlay {
   border-top: 1px solid #3c3c3c;
   background: #1f2430;
 }
-
 .contexts-header {
   padding: 8px 10px;
   border-bottom: 1px solid #3c3c3c;
@@ -1614,21 +1582,15 @@ body.logged-in #loginOverlay {
   font-size: 12px;
   font-weight: 600;
 }
-
 #contextControls {
   flex-shrink: 0;
 }
-
-#contextsTableContainer,
-#projectFilesTableContainer,
-#websiteFilesTableContainer,
-#pushQueueItemsTableContainer {
-    flex: 1;
-    min-height: 0;
-    overflow-y: auto;
-    overflow-x: hidden;
+#contextsTableContainer,#projectFilesTableContainer,#websiteFilesTableContainer,#pushQueueItemsTableContainer {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
 } 
-
 .refresh-btn {
   padding: 2px 8px;
   border: 0;
@@ -1638,16 +1600,13 @@ body.logged-in #loginOverlay {
   font-weight: bold;
   cursor: pointer;
 }
-
 .refresh-btn:hover {
   background: #3a3a3a;
 }
-
 .context-inherited:hover {
   text-decoration: line-through;
   cursor: not-allowed;
 }
-
 .context-clickable {
   color: #fff;
 }
@@ -1655,29 +1614,19 @@ body.logged-in #loginOverlay {
 .context-clickable:hover {
   text-decoration: underline;
 }
-
-/* =========================================================
-   COMMON TABLE
-========================================================= */
-
-.contexts-table,
-.draw-table {
+.contexts-table,.draw-table {
   width: 100%;
   border-collapse: collapse;
   table-layout: fixed;
   color: #ddd;
   font-size: 12px;
 }
-
-.contexts-table thead,
-.draw-table thead {
+.contexts-table thead,.draw-table thead {
   position: sticky;
   top: 0;
   z-index: 5;
 }
-
-.contexts-table th,
-.draw-table th {
+.contexts-table th,.draw-table th {
   padding: 6px;
   border-bottom: 1px solid #444;
   background: #2d2d2d;
@@ -1687,17 +1636,14 @@ body.logged-in #loginOverlay {
   text-overflow: ellipsis;
 }
 
-.contexts-table td,
-.draw-table td {
+.contexts-table td,.draw-table td {
   padding: 6px;
   border-bottom: 1px solid #333;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
-
-.contexts-table tbody tr:hover,
-.draw-table tbody tr:hover {
+.contexts-table tbody tr:hover,.draw-table tbody tr:hover {
   background: #3a3a3a;
   cursor: pointer;
 }
@@ -1707,22 +1653,19 @@ body.logged-in #loginOverlay {
   color: #888;
   text-align: center;
 }
-
-/* =========================================================
-   PROJECTS
-========================================================= */
-
 .project-body {
   flex: 1;
   min-height: 0;
   overflow: auto;
   background: #1f2430;
 }
-
 .project-item {
   color: #fff;
 }
-
+.project-item.tree-selected {
+  background: #2d333b;
+  border-radius: 4px;
+}
 #projectExplorerPanel {
   margin-left: 0 !important;
 }
@@ -1731,13 +1674,11 @@ body.logged-in #loginOverlay {
   flex: 1;
   min-height: 0;
 }
-
 #projectFiles {
   display: flex;
   flex-direction: column;
   gap: 4px;
 }
-
 .project-file {
   padding: 6px 8px;
   border-bottom: 1px solid #333;
@@ -1745,17 +1686,14 @@ body.logged-in #loginOverlay {
   color: #fff;
   cursor: pointer;
 }
-
 .project-file:hover {
   background: #3a3a3a;
 }
-
 .project-file.active {
   background: #2d333b;
   color: #fff;
   font-weight: 600;
 }
-
 .project-toggle {
   border: 0;
   background: transparent;
@@ -1763,28 +1701,22 @@ body.logged-in #loginOverlay {
   font-size: 12px;
   cursor: pointer;
 }
-
 .project-toggle:hover {
   color: #fff;
 }
-
 .project-panel.collapsed {
   width: 28px;
   min-width: 28px;
 }
-
-.project-panel.collapsed .project-header,
-.project-panel.collapsed .project-body {
+.project-panel.collapsed .project-header,.project-panel.collapsed .project-body {
   display: none;
 }
-
 .project-panel.collapsed .project-collapsed-label {
   display: flex;
   flex-direction: column;
   align-items: center;
   height: 100%;
 }
-
 .project-panel.collapsed .project-collapsed-label span {
   margin-top: 20px;
   font-size: 14px;
@@ -1795,11 +1727,6 @@ body.logged-in #loginOverlay {
 .project-panel.collapsed .project-expand {
   margin-top: 5px;
 }
-
-/* =========================================================
-   LIVE WEBSITE
-========================================================= */
-
 #liveWebsitePanel {
   display: flex;
   flex: 1;
@@ -1808,7 +1735,6 @@ body.logged-in #loginOverlay {
   overflow: hidden;
   background: #1f2430;
 }
-
 #liveWebsiteContainer {
   display: none;
   flex: 1;
@@ -1820,7 +1746,6 @@ body.logged-in #loginOverlay {
 #liveWebsiteContainer.active {
   display: block;
 }
-
 .live-website-container {
   display: flex;
   flex: 1;
@@ -1830,7 +1755,6 @@ body.logged-in #loginOverlay {
   background: #1f2430;
   color: #fff;
 }
-
 .live-website-content {
   display: flex;
   flex: 1;
@@ -1839,7 +1763,6 @@ body.logged-in #loginOverlay {
   padding: 0;
   overflow: hidden;
 }
-
 .live-website-left {
   display: flex;
   flex: 1;
@@ -1848,26 +1771,21 @@ body.logged-in #loginOverlay {
   gap: 0;
   overflow: hidden;
 }
-
 .live-website-right {
   flex: 1;
   padding-left: 10px;
   border-left: 1px solid #ddd;
   overflow: auto;
 }
-
-.enterprise-section,
-.brand-section {
+.enterprise-section,.brand-section {
   margin: 0;
 }
-
 .enterprise-dropdown-wrapper {
   position: relative;
   display: flex;
   flex-direction: row;
   width: 100%;
 }
-
 .enterprise-dropdown-list {
   position: absolute;
   width: 100%;
@@ -1875,28 +1793,22 @@ body.logged-in #loginOverlay {
   overflow: auto;
   z-index: 1000;
 }
-
-.enterprise-option,
-.enterprise-dropdown-item {
+.enterprise-option,.enterprise-dropdown-item {
   padding: 10px;
   border-bottom: 1px solid #333;
   color: #ccc;
   font-size: 13px;
   cursor: pointer;
 }
-
-.enterprise-option:hover,
-.enterprise-dropdown-item:hover {
+.enterprise-option:hover,.enterprise-dropdown-item:hover {
   background: #3c3c3c;
   color: #fff;
 }
 
-.enterprise-option.selected,
-.enterprise-dropdown-item.selected {
+.enterprise-option.selected,.enterprise-dropdown-item.selected {
   background: #007acc;
   color: #fff;
 }
-
 .selected-enterprise-display {
   min-height: 20px;
   margin-top: 15px;
@@ -1907,7 +1819,6 @@ body.logged-in #loginOverlay {
   color: #888;
   font-size: 13px;
 }
-
 .livewebsite-tree {
   display: flex;
   flex-direction: column;
@@ -1918,24 +1829,20 @@ body.logged-in #loginOverlay {
   overflow: auto;
   background: #1f2430;
 }
-
 .livewebsite-item {
   padding-left: 5px;
   color: #fff;
   cursor: pointer;
 }
-
 .livewebsite-item:hover {
   background: #3a3a3a;
 }
 
-.livewebsite-item.selected,
-.livewebsite-item.active {
+.livewebsite-item.selected,.livewebsite-item.active {
   background: #2d333b;
   color: #fff;
   font-weight: 600;
 }
-
 #filesSection {
   display: none;
   flex: 1;
@@ -1944,9 +1851,7 @@ body.logged-in #loginOverlay {
   margin-top: 0 !important;
   overflow: hidden;
 }
-
-.library-section,
-.files-section {
+.library-section,.files-section {
   display: flex;
   flex-direction: column;
   height: 100%;
@@ -1955,8 +1860,7 @@ body.logged-in #loginOverlay {
   background: #2d2d2d;
 }
 
-.library-header,
-.files-header {
+.library-header,.files-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -1965,21 +1869,17 @@ body.logged-in #loginOverlay {
   border-bottom: 1px solid #444;
 }
 
-.library-header h4,
-.files-header h4 {
+.library-header h4,.files-header h4 {
   margin: 0;
   color: #fff;
   font-size: 16px;
 }
-
-.library-cloud,
-.files-cloud {
+.library-cloud,.files-cloud {
   flex: 1;
   overflow-y: auto;
 }
 
-.library-item,
-.file-item {
+.library-item,.file-item {
   color: #ccc;
   font-size: 12px;
   word-break: break-word;
@@ -2110,8 +2010,7 @@ body.logged-in #loginOverlay {
 #pushQueuesContainer.active {
   display: block;
 }
-.main-tabs-container,
-.tabs-container {
+.main-tabs-container,.tabs-container {
   display: flex;
   align-items: center;
   padding-right: 5px;
@@ -2174,7 +2073,6 @@ body.logged-in #loginOverlay {
 .pinned-tab:hover {
   background: #2d2d2d;
 }
-
 .pinned-tab.active {
   background: #1e1e1e;
   color: #fff;
@@ -2196,8 +2094,7 @@ body.logged-in #loginOverlay {
   border-top: 1px solid #3c3c3c;
   background: #1f2430;
 }
-.left-panel-script-container,
-.bottom-bar {
+.left-panel-script-container,.bottom-bar {
   display: flex;
   align-items: center;
   flex-shrink: 0;
@@ -2218,12 +2115,10 @@ body.logged-in #loginOverlay {
   min-width: 0;
   height: 30px;
 }
-
 #loadScriptButton {
   flex-shrink: 0;
   height: 30px;
 }
-
 #showHiddenFiles {
   flex-shrink: 0;
 }
@@ -2256,7 +2151,6 @@ body.logged-in #loginOverlay {
   visibility: visible;
   opacity: 1;
 }
-
 .sidebar-toggle:hover {
   background: #303746;
   color: #fff;
@@ -2412,7 +2306,6 @@ body.logged-in #loginOverlay {
   border-radius: 6px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
   color: #fff;
-  font-size: 13px;
   opacity: 0;
   pointer-events: none;
   transform: translateY(20px);
@@ -2552,4 +2445,142 @@ body.logged-in #loginOverlay {
   align-items: center;
   justify-content: center;
   z-index: 10;
+}
+#projectCreateModal{
+  position:fixed;
+  inset:0;
+  display:none;
+  justify-content:center;
+  align-items:center;
+  background:rgba(0,0,0,.45);
+  z-index:9999;
+}
+
+#projectCreateModal .modal-content{
+  background: white;
+  padding: 20px;
+  border-radius: 6px;
+  max-width: 500px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+}
+
+#projectCreateModal input,#projectCreateModal select {
+  width:100%;
+  margin:8px 0 12px;
+  padding: 10px 12px;
+  border-radius: 5px;
+  box-sizing: border-box;
+}
+.modal-buttons{
+  display:flex;
+  justify-content:flex-end;
+  gap:8px;
+}
+/* Live Website Enterprise / Brand Dropdown */
+.enterprise-dropdown-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.enterprise-input {
+  height: 28px;
+  padding: 0 5px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  box-sizing: border-box;
+  user-select: none;
+  background: #fff;
+  color: #000;
+}
+.enterprise-input .selected-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.enterprise-input .arrow {
+  font-size: 12px;
+  margin-left: 8px;
+}
+
+
+/* Common Dropdown For Enterprise + Brand */
+
+.enterprise-dropdown-list {
+  position: absolute;
+  top: 35px;
+  left: 0;
+  width: 100%;
+  border: 1px solid #555;
+  border-radius: 4px;
+  z-index: 9999;
+  display: none;
+  max-height: 300px;
+  overflow: hidden;
+}
+/* Search */
+.enterprise-dropdown-list .search {
+  width: calc(100% - 13px);
+  height: 30px;
+
+  padding: 0 5px;
+}
+/* Options Container */
+.enterprise-dropdown-list .options {
+  max-height: 230px;
+  overflow-y: auto;
+  background: #1f2430;
+}
+/* Option Item */
+.enterprise-dropdown-list .options div {
+  padding: 5px;
+  color: white;
+  cursor: pointer;
+  font-size: 12px;
+}
+.enterprise-dropdown-list .options div:hover {
+  background: #2d333b;
+}
+/* No Result */
+.enterprise-dropdown-list .no-result {
+  padding: 10px;
+  text-align: center;
+  color: #aaa;
+  font-size: 12px;
+}
+/* Brand */
+.brand-section {
+  margin-top: 8px;
+}
+.live-website-select-row {
+  display: flex;
+  width: 100%;
+  align-items: center;
+}
+.live-website-select-row .enterprise-section,.live-website-select-row .brand-section {
+  flex: 1;
+  margin-top: 0;
+}
+.live-website-select-row .enterprise-dropdown-wrapper {
+  width: 100%;
+}
+.brand-section {
+  margin-top: 0;
+}
+.live-website-tree {
+  margin-top: 10px;
+  width: 100%;
+}
+.livewebsite-item {
+  display: block;
+  color: white;
+  cursor: pointer;
+  border-radius: 3px;
+}
+.livewebsite-item:hover {
+  background: #2d333b;
+}
+.livewebsite-item.selected {
+  background: #2d333b;
 }
