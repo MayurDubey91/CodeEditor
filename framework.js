@@ -43,7 +43,7 @@ utils.hideContextLoader = function () {
     loader.style.display = "none";
   }
 };
-utils.showSnackbar = function (message, type = "success", duration = 2500) {
+utils.showSnackbar = function (message, type = "success", duration = 1500) {
   var snackbar = document.getElementById("snackbar");
 
   if (!snackbar) {
@@ -62,21 +62,6 @@ utils.showSnackbar = function (message, type = "success", duration = 2500) {
     snackbar.classList.remove("show");
   }, duration);
 };
-utils.showSnackbar = function (msg, type) {
-  var snackbar = document.getElementById("Snackbar");
-  if (!snackbar) {
-    snackbar = document.createElement("div");
-    snackbar.id = "Snackbar";
-    snackbar.className = "snackbar bold grid -middle-aligned -center-aligned";
-    document.body.appendChild(snackbar);
-  }
-  snackbar.className = "snackbar show " + (type || "");
-  snackbar.innerText = msg;
-  setTimeout(function () {
-    snackbar.className = "snackbar";
-  }, 3000);
-};
-
 utils.reorderItem = function ({CloudDRI, ItemId, PlaceAfter, PlaceBefore, Confirmed, Callback}) {
   if (!CloudDRI || !ItemId) return;
   var url = CloudDRI + "/ReorderItem.do?Item=" + ItemId +(PlaceAfter ? "&PlaceAfter=" + PlaceAfter : "") +(PlaceBefore ? "&PlaceBefore=" + PlaceBefore : "") +(Confirmed === "Y" ? "&Confirmed=Y" : "");
@@ -725,6 +710,16 @@ drawTable.prototype = {
         else {
           value = item[field.field];
         }
+        // if (field.render) {
+        //   value = field.render(item, index);
+        // }
+        // else {
+        //   value = item[field.field];
+
+        //   if ((value === undefined || value === null) && item.Fields) {
+        //     value = item.Fields[field.field];
+        //   }
+        // }
         td.textContent = value === undefined ||value === null ? "" : value;
         tr.appendChild(td);
       });

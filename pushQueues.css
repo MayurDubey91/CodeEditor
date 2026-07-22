@@ -102,18 +102,22 @@
     outline: none;
     height: 35px;
 }
+.tree-node {
+    padding-left: 5px;
+}
 .-add-items-btn {
-    width: 24px;
-    height: 25px;
+    cursor: pointer;
+    width: 30px;
+    min-width: 30px;
+    max-width: 30px;
+    height: 30px;
+    flex: 0 0 30px;
     display: flex;
     align-items: center;
     justify-content: center;
+    box-sizing: border-box;
     background: #fff;
-    color: #000;
-    border: 1px solid #ccc;
-    font-size: 20px;
-    cursor: pointer;
-    z-index: 9999;
+    border: 1px solid black;
 }
 .-modal-overlay {
   position: fixed;
@@ -134,12 +138,18 @@
   max-width: 500px;
   box-shadow: 0 4px 10px rgba(0,0,0,0.3);
 }
+.-items-popup-btn-container {
+    display: flex;
+    flex-direction: row;
+    justify-content: end;
+    gap: 5px;
+    margin-top: 5px;
+}
 form label {
   text-align: left !important;
   padding: 0;
   width: 100%;
   margin-bottom: 5px;
-  font-weight: bold;
 }
 form input {
   width: 100%;
@@ -204,7 +214,7 @@ form button:hover {
   position: fixed;
   z-index: 1000;
   left: 50%;
-  top: 100px; 
+  bottom: 100px; 
   font-size: 14px;
   font-weight: bold;
 }
@@ -306,20 +316,18 @@ form button:hover {
     height: 100%;
     position: relative;
 }
-
 #cloudSearchInput {
+    flex: 1;
+    min-width: 0;
     margin: 0;
 }
-
 #leftPanelPushQueues .-context-input {
     margin: 0;
 }
-
 #cloudList {
     margin: 0;
     padding: 0;
 }
-
 #pushQueueItemsSection {
     margin: 0;
     padding: 0;
@@ -341,13 +349,54 @@ form button:hover {
     min-height: 0;
     overflow: hidden;
 }
-
 #cloudList {
     overflow-y: auto;
 }
-
 #pushQueueItemsSection {
     flex: 1;
     min-height: 0;
     overflow-y: auto;
+}
+.push-queue-info {
+    font-size: 12px;
+    padding: 5px;
+    border-top: 1px solid #3c3c3c;
+}
+.push-info-row {
+    margin-bottom:6px;
+    color:#ddd;
+}
+.push-buttons {
+    padding: 5px;
+    display:flex;
+    gap:8px;
+    margin-top:10px;
+}
+.push-btn {
+    flex:1;
+    height: 32px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+.group-filter {
+    width: 160px; 
+    min-width: 160px;
+    max-width: 160px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    flex-shrink: 0;
+}
+.group-filter .group-dropdown-wrapper {
+    width: 100%;
+}
+.group-filter .enterprise-input {
+    width: 100%;
+    box-sizing: border-box;
+}
+.group-label{
+    color: #ccc;
+    font-size: 12px;
+    white-space: nowrap;
 }

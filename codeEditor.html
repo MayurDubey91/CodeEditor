@@ -12,6 +12,7 @@
         <title>Code Editor</title>
     </head>
     <body id="LiveHRMSStyle1297474167">
+        <div id="SVGContainer" class="-hidden -svg-container"></div>
         <div id="loginOverlay" class="login-overlay">
             <div class="login-panel">
                 <h1>Sign in</h1>
@@ -33,9 +34,9 @@
                     <div class="hierarchy-panel" id="leftPanel">
                         <div class="left-panel-top-container">
                             <div class="left-panel-tabs" role="tablist" aria-label="Left panel sections">
-                                <button type="button" class="left-panel-tab-button active" data-panel="liveActions">Live Actions</button>
+                                <button type="button" class="left-panel-tab-button active" data-panel="liveActions">LiveActions</button>
                                 <button type="button" class="left-panel-tab-button" data-panel="projects">Projects</button>
-                                <button type="button" class="left-panel-tab-button" data-panel="liveWebsite">Live Website</button>
+                                <button type="button" class="left-panel-tab-button" data-panel="liveWebsite">LiveWebsites</button>
                                 <button type="button" class="left-panel-tab-button" data-panel="pushQueues">Push Queues</button>
                             </div>
                         </div>
@@ -44,8 +45,23 @@
                             <div id="leftPanelLiveActions" class="left-panel-tab-panel active">
                                 <div class="editor-top-bar">
                                     <select id="modeDropdown" class="mode-dropdown"></select>
-                                    <div class="-context-identifier-editor-dropdown-div">
+                                    <!-- <div class="-context-identifier-editor-dropdown-div">
                                         <select id="enterpriseDropdown" class="editor-dropdown"></select>
+                                        <input type="text" id="contextIdentifier" class="editor-input" placeholder="Enter context identifier">
+                                    </div> -->
+                                    <div class="-context-identifier-editor-dropdown-div">
+                                        <div class="enterprise-dropdown-wrapper">
+                                            <div id="enterpriseInput" class="enterprise-input">
+                                                <span class="selected-text"></span>
+                                                <span class="arrow">▼</span>
+                                            </div>
+
+                                            <div id="enterpriseDropdown" class="enterprise-dropdown-list" style="display:none;">
+                                                <input id="enterpriseSearch" class="search" type="text" placeholder="Search Enterprise">
+                                                <div id="enterpriseOptions" class="options"></div>
+                                                <div id="enterpriseNoResult" class="no-result" style="display:none;"> No Enterprise Found</div>
+                                            </div>
+                                        </div>
                                         <input type="text" id="contextIdentifier" class="editor-input" placeholder="Enter context identifier">
                                     </div>
                                 </div>
@@ -59,8 +75,13 @@
                             <div id="leftPanelProjects" class="left-panel-tab-panel">
                                 <section class="left-section">
                                     <div class="project-header">
-                                        <span id="projectsToggle"class="toggle" style="color: #fff;cursor: pointer;">[+]</span>
-                                        <span id="projectsLabel"class="label" style="color: #fff;cursor: pointer;">Projects</span>
+                                        <div>
+                                            <span id="projectsToggle"class="toggle" style="color: #fff;cursor: pointer;">[+]</span>
+                                            <span id="projectsLabel"class="label" style="color: #fff;cursor: pointer;">Projects</span>
+                                        </div>
+                                        <div class="-project-plus-btn-div">
+                                            <button id="projectPlusBtn" class="-project-plus-btn" style="cursor: pointer;">+</button>
+                                        </div>
                                     </div>
                                     <div id="projectExplorerPanel" class="project-body" style="display: none;margin-left: 20px;"></div>
                                 </section>
@@ -72,22 +93,37 @@
                                         <div id="liveWebsiteView" class="live-website-container">
                                             <div class="live-website-content">
                                                 <section class="live-website-left">
-                                                    <div class="enterprise-section">
-                                                        <div class="enterprise-dropdown-wrapper">
-                                                            <select id="liveWebsiteEnterpriseInput" type="text" class="enterprise-input" placeholder="Search enterprises..." autocomplete="off"></select>
-                                                            <select id="liveWebsiteBrandInput" class="enterprise-input" disabled>
-                                                                <option value="">Select Brand</option>
-                                                            </select>
-                                                            <div id="liveWebsiteEnterpriseDropdown" class="enterprise-dropdown-list" style="display:none;"></div>
+                                                    <div class="live-website-select-row">
+                                                        <!-- Enterprise -->
+                                                        <div class="enterprise-section">
+                                                            <div class="enterprise-dropdown-wrapper">
+                                                                <div id="liveWebsiteEnterpriseInput" class="enterprise-input">
+                                                                    <span class="selected-text">Select Enterprise</span>
+                                                                    <span class="arrow">▼</span>
+                                                                </div>
+                                                                <div id="liveWebsiteEnterpriseDropdown" class="enterprise-dropdown-list">
+                                                                    <input class="search" placeholder="Search Enterprise">
+                                                                    <div class="options"></div>
+                                                                    <div class="no-result" style="display:none;">No Enterprise Found</div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <!-- Brand -->
+                                                        <div id="brandSection" class="brand-section" style="display:none;">
+                                                            <div class="enterprise-dropdown-wrapper">
+                                                                <div id="liveWebsiteBrandInput" class="enterprise-input">
+                                                                    <span class="selected-text">Select Brand</span>
+                                                                    <span class="arrow">▼</span>
+                                                                </div>
+                                                                <div id="liveWebsiteBrandDropdown" class="enterprise-dropdown-list">
+                                                                    <input class="search" placeholder="Search Brand">
+                                                                    <div class="options"></div>
+                                                                    <div class="no-result" style="display:none;">No Brand Found</div>
+                                                                </div>
+                                                            </div>
                                                         </div>
                                                     </div>
-                                                    <div class="brand-section" id="brandSection" style="display:none;">
-                                                        <div class="enterprise-dropdown-wrapper">
-                                                            <!-- <input id="liveWebsiteBrandInput" type="text" class="enterprise-input" placeholder="Search brands..." autocomplete="off" disabled> -->
-                                                            <div id="liveWebsiteBrandDropdown" class="enterprise-dropdown-list" style="display:none;"></div>
-                                                        </div>
-                                                        <div id="liveWebsiteTree" class="livewebsite-tree"></div>
-                                                    </div>
+                                                    <div id="liveWebsiteTree" class="live-website-tree"></div>
                                                 </section>
                                             </div>
                                         </div>
@@ -100,7 +136,20 @@
                                     <!-- Cloud Search -->
                                     <div class="-context-input">
                                         <input id="cloudSearchInput" type="text" class="editor-input" placeholder="Search Push Queues">
-                                        <div id="addItemsBtn" class="-add-items-btn"> +</div>
+                                        <div class="group-filter">
+                                            <div class="enterprise-dropdown-wrapper group-dropdown-wrapper">
+                                                <div id="groupInput" class="enterprise-input">
+                                                    <span class="selected-text">All Groups</span>
+                                                    <span class="arrow">▼</span>
+                                                </div>
+                                                <div id="groupDropdown" class="enterprise-dropdown-list" style="display:none;">
+                                                    <input id="groupSearch" class="search" type="text" placeholder="Search Group">
+                                                    <div id="groupOptions" class="options"></div>
+                                                    <div id="groupNoResult" class="no-result" style="display:none;">No Group Found</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div id="addItemsBtn" class="-add-items-btn">+</div>
                                     </div>
                                     <!-- Cloud List -->
                                     <div id="cloudList" class="hierarchy-tree"></div>
@@ -149,10 +198,9 @@
                                                 <p>Put || separated context ids to link multiple actions</p>
                                                 <label>Context Id(s)</label>
                                                 <input type="text" id="contextIdsInput" class="Field" placeholder="e.g. id1||id2||id3"required>
-
-                                                <div class="grid -right-aligned">
+                                                <div class="-items-popup-btn-container" style="gap: 5px; padding: 0;">
                                                     <button id="cancelContextBtn" type="button">Cancel</button>
-                                                    <button id="linkContextBtn" type="submit">Link</button>
+                                                    <button id="linkContextBtn" type="submit" style="margin-right: 0;">Link</button>
                                                 </div>
                                             </form>
                                         </div>
@@ -175,6 +223,23 @@
                                     <img id="pushQueuesTableLoader" src="./codeEditorimages/Loader icon.gif" class="-loader-img" alt="Loading...">
                                 </div>
                             </div>
+                        </div>
+                        <div id="pushQueueInfo" class="push-queue-info" style="display:none;">
+                            <div class="push-info-row">
+                                <strong>Last Pushed To:</strong>
+                                <span id="lastPushedBy">-</span>
+                            </div>
+
+                            <div class="push-info-row">
+                                <strong>Last Pushed On:</strong>
+                                <span id="lastPushedOn">-</span>
+                            </div>
+                        </div>
+
+                        <div class="push-buttons">
+                            <button id="pushToQABtn" class="push-btn">Push to QA</button>
+                            <button id="pushToPreBtn" class="push-btn">Push to Prerelease</button>
+                            <button id="pushToLiveBtn" class="push-btn">Push to Live</button>
                         </div>
 
                         <div class="left-panel-script-container">
@@ -233,6 +298,22 @@
         </div>
         <div id="contextMenu" class="context-menu hidden">
             <div id="copyContextId">Copy Id</div>
+        </div>
+        <div id="projectCreateModal" class="modal-overlay" style="display:none;">
+            <div class="modal-content">
+                <h3>Create New</h3>
+                <label>Type</label>
+                <select id="projectCreateType">
+                    <option value="folder">Folder</option>
+                    <option value="file">File</option>
+                </select>
+                <label>Name</label>
+                <input id="projectCreateName" type="text" placeholder="Enter name">
+                <div class="modal-buttons">
+                    <button id="projectCreateOk">Create</button>
+                    <button id="projectCreateCancel">Cancel</button>
+                </div>
+            </div>
         </div>
         <script src="codeEditor.js"></script>
         <script src="pushQueues.js"></script>
