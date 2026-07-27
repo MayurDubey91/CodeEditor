@@ -18,9 +18,9 @@
   };
   pushQueuesContent.prototype = {
     init: async function () {
-          utils.showLoader();
         try {
             codeEditor.activeLeftPanelTab = "pushQueues";
+            utils.showContextLoader();
             await this.loginToLiveHRMS();
             this.loadMainCloud();
             //this.toggleAddButtonVisibility();
@@ -35,7 +35,7 @@
             console.error("PushQueues Init Error:", err);
         }
         finally {
-            utils.hideLoader();
+            utils.hideContextLoader();
         }
     },
     attachEvents: function () {
@@ -117,16 +117,15 @@
         var self = this;
 
         var cloudList = document.getElementById("cloudList");
-        //var itemsList = document.getElementById("itemsList");
         var tableContainer = document.getElementById("pushQueueItemsTableContainer");
+
+        // Show loader on common context area
+        utils.showContextLoader();
 
         if (cloudList) {
             cloudList.innerHTML = "";
         }
 
-        // if (itemsList) {
-        //     itemsList.innerHTML = "<div class='no-items'>Select a Push Queue</div>";
-        // }
         if (tableContainer) {
             tableContainer.innerHTML = "<div class='no-items'>Select a Push Queue</div>";
         }
@@ -135,17 +134,17 @@
         self.tableItems = [];
 
         var userDRI = LIVEHRMS_USER_DATA && LIVEHRMS_USER_DATA["Direct Resource Identifier"];
+
         if (!userDRI) {
             console.warn("User DRI not found.");
 
             if (cloudList) {
                 cloudList.innerHTML = "<div class='no-items'>User DRI Not Found</div>";
             }
+            utils.hideContextLoader();
             return;
         }
-
-        utils.getCloud(userDRI,self.useCloudName)
-        .then(function (cloud) {
+        utils.getCloud(userDRI, self.useCloudName).then(function (cloud) {
             if (!cloud || !cloud.DRI) {
                 if (cloudList) {
                     cloudList.innerHTML = "<div class='no-items'>No Push Queues Found</div>";
@@ -156,25 +155,23 @@
             return utils.getItems(cloud.DRI,"Name||Description||Created By||Created On||Last Pushed To||Last Pushed On||Push Queue Group",true,1,9999);
         })
         .then(function (data) {
-            console.log(data.Results);
             if (!data) {
                 return;
             }
             var clouds = data.Results || [];
-            //self.drawCloudList(clouds);
-            //self.setupCloudSearch(clouds);
-            // self.pushQueueClouds = clouds;
-            // self.drawCloudList(clouds);
-            // self.setupCloudSearch();
             self.pushQueueClouds = clouds;
             self.initializeGroupDropdown();
             self.setupCloudSearch();
         })
         .catch(function (err) {
-            console.error("Push Queues Load Error:",err);
+            console.error("Push Queues Load Error:", err);
             if (cloudList) {
                 cloudList.innerHTML = "<div class='no-items'>Failed to load Push Queues</div>";
             }
+        })
+        .finally(function () {
+            // Hide loader after everything is finished
+            utils.hideContextLoader();
         });
     },
     drawCloudList: async function (items) {
@@ -223,8 +220,6 @@
                 firstCloudDRI = cloudDRI;
             }
         });
-
-
         // Default active cloud
         if (firstRow &&firstItem &&firstCloudDRI) {
             firstRow.classList.add("selected");
@@ -237,12 +232,11 @@
     },
     loadTable: async function (cloudDRI) {
         if (!cloudDRI) {
-            console.warn("Queue DRI missing.");
+            console.warn("Queue DRI missing");
             return;
         }
 
         var self = this;
-
         var box = document.getElementById("commonContextBox");
         var commonLabel = document.getElementById("commonSourceLabel");
         var searchInput = document.getElementById("commonSearchInput");
@@ -283,20 +277,15 @@
             };
         }
 
-        tableContainer.innerHTML = "<div class='no-items'>Loading...</div>";
+       if (tableContainer) {
+            tableContainer.innerHTML = "";
+            utils.showContextLoader();
+        }
         this.cloudDRI = cloudDRI;
 
         try {
-            var data = await utils.getItems(
-                cloudDRI,
-                "Name||Created By||Created On",
-                true,
-                1,
-                9999
-            );
-
+            var data = await utils.getItems(cloudDRI,"Name||Created By||Created On",true,1,9999);
             var items = data && data.Results ? data.Results : [];
-
             this.tableItems = items;
             this.renderTable(items);
             this.setupTableSearch();
@@ -315,6 +304,9 @@
             if (info) {
                 info.style.display = "none";
             }
+        }
+        finally {
+            utils.hideContextLoader();
         }
 
         // Load Last Push Info

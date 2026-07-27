@@ -116,8 +116,6 @@
     align-items: center;
     justify-content: center;
     box-sizing: border-box;
-    background: #fff;
-    border: 1px solid black;
 }
 .-modal-overlay {
   position: fixed;
@@ -399,4 +397,7 @@ form button:hover {
     color: #ccc;
     font-size: 12px;
     white-space: nowrap;
+}
+.icon {
+  fill: #ddd;
 }
