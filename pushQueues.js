@@ -311,29 +311,34 @@
 
         // Load Last Push Info
         try {
-            var pushInfo = await useFetch(
-                cloudDRI + "/GetFieldValues.json?Fields=Last Pushed To||Last Pushed On"
-            ).then(function (r) {
+            var pushInfo = await useFetch(cloudDRI + "/GetFieldValues.json?Fields=Last Pushed To||Last Pushed On").then(function (r) {
                 return r.json();
             });
-
-            if (lastPushedBy) {
-                lastPushedBy.textContent = pushInfo["Last Pushed To"] || "-";
+            var pushedTo = (pushInfo["Last Pushed To"] || "").trim();
+            var pushedOn = (pushInfo["Last Pushed On"] || "").trim();
+            // Show info only if at least one value exists
+            if (info) {
+                info.style.display = (pushedTo || pushedOn) ? "block" : "none";
             }
-
+            if (lastPushedBy) {
+                lastPushedBy.textContent = pushedTo;
+            }
             if (lastPushedOn) {
-                lastPushedOn.textContent = pushInfo["Last Pushed On"] || "-";
+                lastPushedOn.textContent = pushedOn;
             }
         }
         catch (err) {
             console.error("Error loading push info:", err);
+            if (info) {
+                info.style.display = "none";
+            }
 
             if (lastPushedBy) {
-                lastPushedBy.textContent = "-";
+                lastPushedBy.textContent = "";
             }
 
             if (lastPushedOn) {
-                lastPushedOn.textContent = "-";
+                lastPushedOn.textContent = "";
             }
         }
 

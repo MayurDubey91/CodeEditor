@@ -681,6 +681,7 @@ drawTable.prototype = {
   drawBody: function () {
     var self = this;
     var tbody = document.createElement("tbody");
+
     if (!this.data.length) {
       var tr = document.createElement("tr");
       var td = document.createElement("td");
@@ -691,41 +692,40 @@ drawTable.prototype = {
       tbody.appendChild(tr);
       return tbody;
     }
-
     this.data.forEach(function (item, index) {
       var tr = document.createElement("tr");
       tr.dataset.index = index;
-      if (item.Id) tr.dataset.id = item.Id;
-      if (self.getRowClass) {
+      // Store Context Id for all modules
+      var contextId =item.Id ||item.ContextId ||item["Context Id"] ||item["Direct Resource Identifier"] ||item.DRI;
+      if (contextId) {
+        tr.dataset.contextId = contextId;
+        tr.dataset.id = contextId;
+      }
 
+      if (self.getRowClass) {
         var rowClass = self.getRowClass(item);
-        if (rowClass)tr.classList.add(rowClass);
+        if (rowClass) {
+          tr.classList.add(rowClass);
+        }
       }
       self.fields.forEach(function (field) {
         var td = document.createElement("td");
         var value;
         if (field.render) {
           value = field.render(item, index);
-        }
-        else {
+        } else {
           value = item[field.field];
+          if ((value === undefined || value === null) && item.Fields) {
+            value = item.Fields[field.field];
+          }
         }
-        // if (field.render) {
-        //   value = field.render(item, index);
-        // }
-        // else {
-        //   value = item[field.field];
-
-        //   if ((value === undefined || value === null) && item.Fields) {
-        //     value = item.Fields[field.field];
-        //   }
-        // }
-        td.textContent = value === undefined ||value === null ? "" : value;
+        td.textContent = (value === undefined || value === null) ? "" : value;
         tr.appendChild(td);
       });
+
       if (self.onRowClick) {
-        tr.addEventListener("click",function (event) {
-          self.onRowClick(item,tr,event);
+        tr.addEventListener("click", function (event) {
+          self.onRowClick(item, tr, event);
         });
       }
       tbody.appendChild(tr);
