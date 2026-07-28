@@ -1624,25 +1624,43 @@ codeEditor.prototype = {
     }
   },
   initializeContextMenu: function () {
+    var wrapper = document.getElementById("commonContextWrapper");
     var menu = document.getElementById("contextMenu");
-    document.addEventListener("click", () => {
-      menu.classList.add("hidden");
-    });
-    document.addEventListener("contextmenu", (e) => {
-      var target = e.target.closest("[data-context-id]");
-      if (!target) return;
-      e.preventDefault();
-      var id = target.getAttribute("data-context-id");
-      var menu = document.getElementById("contextMenu");
-      menu.style.top = e.pageY + "px";
-      menu.style.left = e.pageX + "px";
-      menu.classList.remove("hidden");
+    var copyBtn = document.getElementById("copyContextId");
 
-      document.getElementById("copyContextId").onclick = async () => {
-        await navigator.clipboard.writeText(id);
-        menu.classList.add("hidden");
-      };
+    if (!wrapper || !menu || !copyBtn) return;
+    wrapper.addEventListener("contextmenu", function (e) {
+      var row = e.target.closest("tr");
+      if (!row) {
+        menu.style.display = "none";
+        return;
+      }
+      e.preventDefault();
+      var contextId = row.dataset.contextId;
+      if (!contextId) {
+        console.warn("Context Id not found on row.", row);
+        menu.style.display = "none";
+        return;
+      }
+
+      menu.dataset.contextId = contextId;
+      menu.style.left = e.pageX + "px";
+      menu.style.top = e.pageY + "px";
+      menu.style.display = "block";
     });
+
+    document.addEventListener("click", function () {
+      menu.style.display = "none";
+    });
+
+    copyBtn.onclick = function () {
+      var contextId = menu.dataset.contextId || "";
+      navigator.clipboard.writeText(contextId);
+      menu.style.display = "none";
+      if (utils && utils.showSnackbar) {
+        utils.showSnackbar("Context Id copied");
+      }
+    };
   },
   openContextById: async function (contextId) {
     if (!contextId) {
@@ -1774,10 +1792,10 @@ codeEditor.prototype = {
         break;
     }
   },
-  renderContextsFromCache: function (list) {
+renderContextsFromCache: function (list) {
     var common = this.showCommonContextBox({
-      placeholder: "Search Contexts",
-      showRefresh: true
+        placeholder: "Search Contexts",
+        showRefresh: true
     });
 
     if (!common) return;
@@ -1787,46 +1805,70 @@ codeEditor.prototype = {
     var self = this;
 
     new drawTable({
-      container: container,
-      data: list || [],
-      fields: [
-        {
-          label: "Name",
-          render: function (item) {
-            return item.Object? item.Object.Name || "": "";
-          }
-        },
-        {
-          label: "Last Edited On",
-          render: function (item) {
-            return item["Last Edited On"] || "";
-          }
-        },
-        {
-          label: "Last Edited By",
-          render: function (item) {
-            return item["Last Edited By"] || "";
-          }
+        container: container,
+        data: list || [],
+        fields: [
+            {
+                label: "Name",
+                render: function (item) {
+                    return item.Object ? item.Object.Name || "" : "";
+                }
+            },
+            {
+                label: "Last Edited On",
+                render: function (item) {
+                    return item["Last Edited On"] || "";
+                }
+            },
+            {
+                label: "Last Edited By",
+                render: function (item) {
+                    return item["Last Edited By"] || "";
+                }
+            }
+        ],
+        emptyText: "No Contexts Found",
+        onRowClick: function (context) {
+
+            var contextObject = context.Object;
+            if (!contextObject) return;
+
+            var contextControl = contextObject["Context Control__699483795"];
+            if (contextControl === "Inherited") {
+                return;
+            }
+
+            self.openContextInEditor(contextObject.Id, contextObject.Name);
         }
-      ],
-      emptyText: "No Contexts Found",
-      onRowClick: function (context) {
-        var contextObject = context.Object;
-        if (!contextObject) return;
-        var contextControl = contextObject["Context Control__699483795"];
-        if (contextControl === "Inherited") {
-          return;
-        }
-        self.openContextInEditor(contextObject.Id,contextObject.Name);
-      }
     });
+
+    // IMPORTANT : Set ContextId on every row
+    setTimeout(function () {
+
+        var rows = container.querySelectorAll("tbody tr");
+
+        rows.forEach(function (row, index) {
+
+            var item = (list || [])[index];
+
+            if (item && item.Object) {
+                row.dataset.contextId = item.Object.Id;
+            }
+
+        });
+
+    }, 0);
+
     search.oninput = function () {
-      var text = this.value.toLowerCase();
-      container.querySelectorAll("tbody tr").forEach(function (row) {
-        row.style.display = row.textContent.toLowerCase().includes(text)? "": "none";
-      });
+        var text = this.value.toLowerCase();
+
+        container.querySelectorAll("tbody tr").forEach(function (row) {
+            row.style.display = row.textContent.toLowerCase().includes(text)
+                ? ""
+                : "none";
+        });
     };
-  },
+},
   renderTreeFromCache: function(parentDiv, list, type) {
 
     var container = document.createElement("div");

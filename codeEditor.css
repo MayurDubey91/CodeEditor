@@ -2087,12 +2087,12 @@ body.logged-in #loginOverlay {
   background: #1f2430;
 }
 .left-panel-script-container {
+  padding: 4px;
+  gap: 5px;
   display: flex;
   align-items: center;
   flex-shrink: 0;
-
-  min-height: 38px;
-
+  min-height: 35px;
   border-top: 1px solid #3c3c3c;
   background: #1f2430;
 }
@@ -2223,17 +2223,21 @@ body.logged-in #loginOverlay {
 }
 .context-menu {
   position: fixed;
-  min-width: 120px;
-  padding: 6px 0;
-  border: 1px solid #444;
   background: #222;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
   color: #fff;
-  font-size: 13px;
-  z-index: 9999;
+  border: 1px solid #444;
+  box-shadow: 0 2px 10px rgba(0,0,0,.4);
+  z-index: 999999;
+  border-radius: 5px;
+  font-size: 12px;
 }
+
+.context-menu.hidden {
+  display: none;
+}
+
 .context-menu div {
-  padding: 6px 12px;
+  padding: 8px;
   cursor: pointer;
 }
 
@@ -2657,17 +2661,18 @@ body.logged-in #loginOverlay {
 button {
   border: 1px solid #e3e3e3;
   width: auto;
-  min-width: 140px;
   cursor: pointer;
   padding: 5px 10px;
   border-radius: 5px;
   background-color: #f2f2f2;
 }
-button:hover {
-  background-color: #EBF2F9;
-  border: 1px solid #b8d9fa;
-}
 .icon {
   height: 28px;
   width: 28px;
+}
+.create-doc-button {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-width: 70px;
 }
