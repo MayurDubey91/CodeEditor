@@ -1320,6 +1320,17 @@ body.logged-in #loginOverlay {
   font-size: 14px;
   outline: none;
 }
+.login-field .-login-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 14px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  background: #10151f;
+  color: #fff;
+  font-size: 14px;
+  outline: none;
+}
 .login-field input:focus {
   border-color: #5b7bff;
 }
@@ -1529,9 +1540,9 @@ body.logged-in #loginOverlay {
 
 .-context-input-box,#projectFilesSection,#filesSection,#pushQueueItemsSection {
   flex: 0 0 430px;
-  height: 430px;
-  min-height: 430px;
-  max-height: 430px;
+  height: 250px;
+  min-height: 250px;
+  max-height: 250px;
   flex-direction: column;
   overflow: hidden;
 }
