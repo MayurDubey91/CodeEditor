@@ -47,6 +47,7 @@ codeEditor.prototype = {
     }
 
     await this.loadVersions();
+    this.restoreLiveWebsiteSelection();
 
     this.allContexts = [];
     this.currentContextId = null;
@@ -87,8 +88,31 @@ codeEditor.prototype = {
         CloudType: {}
       };
       this.mode = e.target.value;
-      var domain = this.getSelectedEnterpriseDoamin();
       await this.rebuildLeftPanel();
+      var commonContextBox = document.getElementById("commonContextBox");
+      switch (this.activeTabType) {
+        case "pushQueues":
+            this.openPushQueuesTab(true);
+            break;
+
+        case "liveWebsite":
+            this.openLiveWebsiteTab(true);
+            break;
+
+        case "projects":
+            if (this.selectedProjectFolderData) {
+                this.showProjectFolderFiles(this.selectedProjectFolderData, true);
+            }
+            break;
+
+        default:
+            await this.refreshCommonSection();
+
+            if (commonContextBox) {
+                commonContextBox.style.display = "block";
+            }
+            break;
+        }
     });
 
     document.addEventListener("keydown", async (e) => {
@@ -250,8 +274,11 @@ codeEditor.prototype = {
         addItemsRightBtn.style.display = "none";
     }
     buttons.forEach((button) => {
-      button.addEventListener("click", () => {
+      button.addEventListener("click", async () => {
         var targetPanel = button.getAttribute("data-panel");
+        if (this.activeLeftPanelTab === targetPanel) {
+          return;
+        }
         this.activeLeftPanelTab = targetPanel;
         this.resetCommonContextBox();
         var pushQueueSection = document.getElementById("pushQueueSection");
@@ -296,18 +323,24 @@ codeEditor.prototype = {
           return;
         }
         if (targetPanel === "projects") {
-            var panel = document.getElementById("projectPanel");
-            if (panel) {
-                panel.style.display = "block";
-            }
-            var projectsLabel = document.getElementById("projectsLabel");
+          var projectHeader = document.querySelector(".project-header");
+          if (projectHeader && projectHeader.classList.contains("tree-selected")) {
+              var rootFolder = {
+                name: "Projects",
+                path: this.projectRoot,
+                children: this.projectTreeItems || []
+              };
+              this.selectedProjectFolder = rootFolder.path;
+              this.selectedProjectFolderData = rootFolder;
+              this.showProjectFolderFiles(rootFolder, true);
 
-            if (projectsLabel) {
-              setTimeout(function () {
-                  projectsLabel.click();
-              }, 0);
-            }
-            return;
+          } else {
+              var projectsLabel = document.getElementById("projectsLabel");
+              if (projectsLabel) {
+                projectsLabel.click();
+              }
+          }
+          return;
         }
 
         // if (targetPanel === "liveWebsite") {
@@ -318,7 +351,7 @@ codeEditor.prototype = {
         //   }
         // }
         if (targetPanel === "liveWebsite") {
-          this.openLiveWebsiteTab();
+          await this.openLiveWebsiteTab();
           return;
         }
 
@@ -565,7 +598,7 @@ codeEditor.prototype = {
     aiBtn.id = "aiTabButton";
     aiBtn.className = "ai-tab";
     aiBtn.innerHTML = `
-        <svg class="icon -large">
+        <svg class="icon -large -fill">
             <use href="#AI"></use>
         </svg>
     `;
@@ -748,14 +781,19 @@ codeEditor.prototype = {
       this.selectedEnterprise = defaultEnterprise;
       input.querySelector(".selected-text").textContent = defaultEnterprise["Formatted Name"] || defaultEnterprise.FormattedName || defaultEnterprise.Name;
       renderOptions();
-      input.onclick = () => {
-        dropdown.style.display =
-          dropdown.style.display === "block" ? "none" : "block";
+input.onclick = (e) => {
+    e.stopPropagation();
 
-        if (dropdown.style.display === "block") {
-          search.focus();
-        }
-      };
+    // Close Brand dropdown
+    var brandDropdown = document.getElementById("liveWebsiteBrandDropdown");
+    if (brandDropdown) {
+        brandDropdown.style.display = "none";
+    }
+
+    // Toggle Enterprise dropdown
+    dropdown.style.display =
+        dropdown.style.display === "block" ? "none" : "block";
+};
 
       search.oninput = () => {
         renderOptions(search.value);
@@ -1513,7 +1551,7 @@ codeEditor.prototype = {
     catch (error) {
         console.error("Load projects error:", error);
     }
-},
+  },
   loadSourceCodeInEditor: async function (contextId,tabId) {
     try {
       if (!contextId) {
@@ -1792,7 +1830,7 @@ codeEditor.prototype = {
         break;
     }
   },
-renderContextsFromCache: function (list) {
+  renderContextsFromCache: function (list) {
     var common = this.showCommonContextBox({
         placeholder: "Search Contexts",
         showRefresh: true
@@ -1844,31 +1882,21 @@ renderContextsFromCache: function (list) {
 
     // IMPORTANT : Set ContextId on every row
     setTimeout(function () {
-
-        var rows = container.querySelectorAll("tbody tr");
-
-        rows.forEach(function (row, index) {
-
-            var item = (list || [])[index];
-
-            if (item && item.Object) {
-                row.dataset.contextId = item.Object.Id;
-            }
-
-        });
-
+      var rows = container.querySelectorAll("tbody tr");
+      rows.forEach(function (row, index) {
+        var item = (list || [])[index];
+        if (item && item.Object) {
+          row.dataset.contextId = item.Object.Id;
+        }
+      });
     }, 0);
-
     search.oninput = function () {
-        var text = this.value.toLowerCase();
-
-        container.querySelectorAll("tbody tr").forEach(function (row) {
-            row.style.display = row.textContent.toLowerCase().includes(text)
-                ? ""
-                : "none";
-        });
+      var text = this.value.toLowerCase();
+      container.querySelectorAll("tbody tr").forEach(function (row) {
+        row.style.display = row.textContent.toLowerCase().includes(text)? "": "none";
+      });
     };
-},
+  },
   renderTreeFromCache: function(parentDiv, list, type) {
 
     var container = document.createElement("div");
@@ -2069,64 +2097,70 @@ renderContextsFromCache: function (list) {
       this.scriptDomain = savedUrl;
     }
     button.addEventListener("click", async () => {
-      var domain = urlInput.value.trim();
-      if (!domain) {
-        utils.showSnackbar("Unable to login to this script URL, please ensure the URL is valid.", "error");
-        return;
-      }
+        var domain = urlInput.value.trim();
 
-      domain = domain.replace(/\/+$/, "");
-      this.scriptDomain = domain;
-      localStorage.setItem("scriptUrl", domain);
-      var username = localStorage.getItem("loginUserName");
-      var password = localStorage.getItem("loginPassword");
-
-      if (!username || !password) {
-        utils.showSnackbar("Please login first.");
-        return;
-      }
-
-      try {
-        button.disabled = true;
-        button.textContent = "Processing...";
-
-        // LSV2 Script Login
-        var loginResp = await fetch(domain + "/login.do", {
-          method: "POST",
-          credentials: "include",
-          headers: {
-            "Content-Type": "application/x-www-form-urlencoded"
-          },
-          body: new URLSearchParams({
-            UserName: username,
-            Password: password
-          })
-        });
-        var loginData = await loginResp.json();
-        if (!loginData || loginData.Result === false) {
-          throw new Error("Script login failed.");
+        if (!domain) {
+            utils.showSnackbar(
+                "Unable to login to this script URL, please ensure the URL is valid.",
+                "error"
+            );
+            return;
         }
-        // Optional ExecuteCustomCode
-        if (checkbox && checkbox.checked) {
-          var response = await fetch(domain + "/ExecuteCustomCode.htm?ShowDebug=all",
-            {
-              method: "POST",
-              credentials: "include",
-              headers: {
-                "Content-Type": "application/x-www-form-urlencoded"
-              },
-              body: "ShowDebug=all"
+
+        domain = domain.replace(/\/+$/, "");
+        this.scriptDomain = domain;
+        localStorage.setItem("scriptUrl", domain);
+
+        var username = localStorage.getItem("loginUserName");
+        var password = localStorage.getItem("loginPassword");
+
+        if (!username || !password) {
+            utils.showSnackbar("Please login first.");
+            return;
+        }
+
+        try {
+            button.disabled = true;
+            button.textContent = "Processing...";
+
+            var loginResp = await fetch(domain + "/login.do", {
+                method: "POST",
+                credentials: "include",
+                headers: {
+                    "Content-Type": "application/x-www-form-urlencoded"
+                },
+                body: new URLSearchParams({
+                    UserName: username,
+                    Password: password
+                })
             });
+
+            var loginData = await loginResp.json();
+
+            if (!loginData || loginData.Result === false) {
+                throw new Error("Script login failed.");
+            }
+
+            if (checkbox && checkbox.checked) {
+                await fetch(domain + "/ExecuteCustomCode.htm?ShowDebug=all", {
+                    method: "POST",
+                    credentials: "include",
+                    headers: {
+                        "Content-Type": "application/x-www-form-urlencoded"
+                    },
+                    body: "ShowDebug=all"
+                });
+            }
+
+            utils.showSnackbar("Script login successful.");
         }
-        utils.showSnackbar("Script login successful.");
-      }
-      catch (e) {
-        utils.showSnackbar("Script login failed.","error");
-      }
-      finally {
-        button.disabled = false;
-        button.textContent = "Login";
-      }
+        catch (e) {
+            utils.showSnackbar("Script login failed.", "error");
+        }
+        finally {
+            button.disabled = false;
+            button.textContent = "Login";
+        }
     });
   },
   runCustomScriptOnF5: async function () {
@@ -2501,7 +2535,12 @@ renderContextsFromCache: function (list) {
     });
     messages.scrollTop = messages.scrollHeight;
   },
-  openPushQueuesTab: function () {
+  openPushQueuesTab: function (forceReload = false) {
+
+    if (!forceReload && this.activeTabType === "pushQueues") {
+        return;
+    }
+
     this.activeTabType = "pushQueues";
 
     var container = document.getElementById("pushQueuesContainer");
@@ -2515,48 +2554,51 @@ renderContextsFromCache: function (list) {
 
     // Show Push Queues
     container.style.display = "flex";
+
     var pushQueueSection = document.getElementById("pushQueueSection");
-      if (pushQueueSection) {
+    if (pushQueueSection) {
         pushQueueSection.style.display = "block";
-      }
+    }
 
     // Hide Monaco Editor
     if (editor) {
-      editor.style.display = "none";
+        editor.style.display = "none";
     }
 
     // Hide LiveWebsite
     if (liveWebsiteContainer) {
-      liveWebsiteContainer.style.display = "none";
+        liveWebsiteContainer.style.display = "none";
     }
 
-    // Active tab
     if (pushQueuesTab) {
-      pushQueuesTab.classList.add("active");
+        pushQueuesTab.classList.add("active");
     }
 
     if (liveWebsiteTab) {
-      liveWebsiteTab.classList.remove("active");
+        liveWebsiteTab.classList.remove("active");
     }
 
-    // Disable AI
     var aiBtn = document.getElementById("aiTabButton");
     if (aiBtn) {
-      aiBtn.disabled = true;
+        aiBtn.disabled = true;
     }
 
-    // Load Push Queues plugin
     if (!window.pushQueuesPlugin) {
-      window.pushQueuesPlugin = new pushQueuesContent();
+        window.pushQueuesPlugin = new pushQueuesContent();
     } else {
-      window.pushQueuesPlugin.loadMainCloud(true);
+        window.pushQueuesPlugin.loadMainCloud(true);
     }
 
     if (this.monacoEditor) {
         this.monacoEditor.layout();
     }
-  },
-  openLiveWebsiteTab: function () {
+},
+  openLiveWebsiteTab: async function (forceReload = false) {
+
+    if (!forceReload && this.activeTabType === "liveWebsite") {
+        return;
+    }
+
     this.activeTabType = "liveWebsite";
 
     var container = document.getElementById("liveWebsitePanel");
@@ -2571,30 +2613,32 @@ renderContextsFromCache: function (list) {
     container.style.display = "block";
 
     if (pushQueuesContainer) {
-      pushQueuesContainer.style.display = "none";
+        pushQueuesContainer.style.display = "none";
     }
+
     var pushQueueSection = document.getElementById("pushQueueSection");
     if (pushQueueSection) {
         pushQueueSection.style.display = "none";
     }
 
     if (liveWebsiteTab) {
-      liveWebsiteTab.classList.add("active");
+        liveWebsiteTab.classList.add("active");
     }
 
     if (pushQueuesTab) {
-      pushQueuesTab.classList.remove("active");
+        pushQueuesTab.classList.remove("active");
     }
 
     var aiBtn = document.getElementById("aiTabButton");
     if (aiBtn) {
-      aiBtn.disabled = true;
+        aiBtn.disabled = true;
     }
 
-    // this.restoreLiveWebsiteSelection();
-
-    this.initializeLiveWebsiteTab();
-  },
+    await this.initializeLiveWebsiteTab();
+    if (this.selectedLiveWebsite) {
+      await this.loadLiveWebsiteFiles(this.selectedLiveWebsite);
+    }
+},
   restoreLiveWebsiteSelection: function () {
     var enterprise = localStorage.getItem("selectedLiveWebsiteEnterprise");
     if (enterprise) {
@@ -2611,12 +2655,14 @@ renderContextsFromCache: function (list) {
       this.selectedLiveWebsite = JSON.parse(website);
     }
   },
-  initializeLiveWebsiteTab: async function () {
+initializeLiveWebsiteTab: async function () {
+    this.restoreLiveWebsiteSelection();
+
     var input = document.getElementById("liveWebsiteEnterpriseInput");
     var dropdown = document.getElementById("liveWebsiteEnterpriseDropdown");
 
     if (!input || !dropdown) {
-      return;
+        return;
     }
 
     var selectedText = input.querySelector(".selected-text");
@@ -2625,86 +2671,178 @@ renderContextsFromCache: function (list) {
     var noResult = dropdown.querySelector(".no-result");
 
     if (!selectedText || !options) {
-      return;
-    }
-    options.innerHTML = "";
-    var self = this;
-    function renderEnterprises(list) {
-      options.innerHTML = "";
-      if (!list.length) {
-        if (noResult) {
-          noResult.style.display = "block";
-        }
         return;
-      }
-
-      if (noResult) {
-        noResult.style.display = "none";
-      }
-
-      list.forEach(function (enterprise) {
-        var div = document.createElement("div");
-        div.className = "dropdown-option";
-        div.textContent =enterprise["Formatted Name"] ||enterprise.FormattedName || enterprise.Name ||"Unnamed";
-        div.dataset.id = enterprise.Id;
-
-        div.onclick = async function (e) {
-          e.stopPropagation();
-          selectedText.textContent = div.textContent;
-          self.selectedLiveWebsiteEnterprise = enterprise;
-          localStorage.setItem("selectedLiveWebsiteEnterprise",JSON.stringify(enterprise));
-          dropdown.style.display = "none";
-          var brandSection = document.getElementById("brandSection");
-          if (brandSection) {
-            brandSection.style.display = "block";
-          }
-          await self.loadBrands(enterprise);
-        };
-        options.appendChild(div);
-      });
     }
-    renderEnterprises(this.enterprises || []);
-    if (search) {
-      search.oninput = function (e) {
-        e.stopPropagation();
-        var value = this.value.toLowerCase();
-        var filtered = (self.enterprises || []).filter(function (enterprise) {
-          var name =enterprise["Formatted Name"] ||enterprise.FormattedName ||enterprise.Name ||"";
-          return name.toLowerCase().includes(value);
+
+    options.innerHTML = "";
+
+    var self = this;
+
+    function renderEnterprises(list) {
+
+        options.innerHTML = "";
+
+        if (!list.length) {
+
+            if (noResult) {
+                noResult.style.display = "block";
+            }
+
+            return;
+        }
+
+        if (noResult) {
+            noResult.style.display = "none";
+        }
+
+        list.forEach(function (enterprise) {
+
+            var div = document.createElement("div");
+            div.className = "dropdown-option";
+
+            div.textContent =
+                enterprise["Formatted Name"] ||
+                enterprise.FormattedName ||
+                enterprise.Name ||
+                "Unnamed";
+
+            div.dataset.id = enterprise.Id;
+
+            div.onclick = async function (e) {
+
+                e.stopPropagation();
+
+                selectedText.textContent = div.textContent;
+
+                self.selectedLiveWebsiteEnterprise = enterprise;
+
+                localStorage.setItem(
+                    "selectedLiveWebsiteEnterprise",
+                    JSON.stringify(enterprise)
+                );
+
+                dropdown.style.display = "none";
+
+                var brandSection = document.getElementById("brandSection");
+
+                if (brandSection) {
+                    brandSection.style.display = "block";
+                }
+
+                await self.loadBrands(enterprise);
+            };
+
+            options.appendChild(div);
         });
-        renderEnterprises(filtered);
-      };
+    }
+
+    renderEnterprises(this.enterprises || []);
+
+    if (search) {
+
+        search.oninput = function (e) {
+
+            e.stopPropagation();
+
+            var value = this.value.toLowerCase();
+
+            var filtered = (self.enterprises || []).filter(function (enterprise) {
+
+                var name =
+                    enterprise["Formatted Name"] ||
+                    enterprise.FormattedName ||
+                    enterprise.Name ||
+                    "";
+
+                return name.toLowerCase().includes(value);
+            });
+
+            renderEnterprises(filtered);
+        };
     }
 
     input.onclick = function (e) {
-      e.stopPropagation();
-      dropdown.style.display = dropdown.style.display === "block" ? "none": "block";
+
+        e.stopPropagation();
+
+        var brandDropdown = document.getElementById("liveWebsiteBrandDropdown");
+
+        if (brandDropdown) {
+            brandDropdown.style.display = "none";
+        }
+
+        dropdown.style.display =
+            dropdown.style.display === "block"
+                ? "none"
+                : "block";
     };
 
     dropdown.onclick = function (e) {
-      e.stopPropagation();
+        e.stopPropagation();
     };
 
-    var livePlatform = (this.enterprises || []).find(function (enterprise) {
-      var name = enterprise["Formatted Name"] || enterprise.FormattedName || enterprise.Name || "";
-      return name.toLowerCase() === "liveplatform";
-    });
+    // Restore previously selected enterprise
+    var enterpriseToLoad = null;
 
-    if (livePlatform) {
-      selectedText.textContent = livePlatform["Formatted Name"] || livePlatform.FormattedName || livePlatform.Name;
-      this.selectedLiveWebsiteEnterprise = livePlatform;
-      localStorage.setItem("selectedLiveWebsiteEnterprise", JSON.stringify(livePlatform));
-      var brandSection = document.getElementById("brandSection");
-      if (brandSection) {
-        brandSection.style.display = "block";
-      }
-      await this.loadBrands(livePlatform);
+    if (this.selectedLiveWebsiteEnterprise) {
+
+        enterpriseToLoad = (this.enterprises || []).find(function (e) {
+            return e.Id == self.selectedLiveWebsiteEnterprise.Id;
+        });
     }
 
+    // Default to LivePlatform only if nothing is saved
+    if (!enterpriseToLoad) {
+
+        enterpriseToLoad = (this.enterprises || []).find(function (enterprise) {
+
+            var name =
+                enterprise["Formatted Name"] ||
+                enterprise.FormattedName ||
+                enterprise.Name ||
+                "";
+
+            return name.toLowerCase() === "liveplatform";
+        });
+    }
+
+    if (enterpriseToLoad) {
+
+    selectedText.textContent =
+        enterpriseToLoad["Formatted Name"] ||
+        enterpriseToLoad.FormattedName ||
+        enterpriseToLoad.Name;
+
+    this.selectedLiveWebsiteEnterprise = enterpriseToLoad;
+
+    localStorage.setItem(
+        "selectedLiveWebsiteEnterprise",
+        JSON.stringify(enterpriseToLoad)
+    );
+
+    var brandSection = document.getElementById("brandSection");
+
+    if (brandSection) {
+        brandSection.style.display = "block";
+    }
+
+    // Already loaded? Then don't reload.
+    if (
+        this.currentEnterpriseId !== enterpriseToLoad.Id ||
+        !this.brands ||
+        !this.brands.length
+    ) {
+
+        this.currentEnterpriseId = enterpriseToLoad.Id;
+
+        await this.loadBrands(enterpriseToLoad);
+    }
+}
+
     document.addEventListener("click", function () {
-      dropdown.style.display = "none";
+        dropdown.style.display = "none";
     });
-  },
+},
   loadBrands: async function (enterprise) {
     if (brandInput) {
         brandInput.classList.add("disabled");
@@ -2717,6 +2855,32 @@ renderContextsFromCache: function (list) {
     if (!enterprise) {
       return;
     }
+
+    // Don't reload brands if same enterprise already loaded
+if (
+    this.currentEnterpriseId === enterprise.Id &&
+    this.brands &&
+    this.brands.length
+) {
+
+    var brandInput = document.getElementById("liveWebsiteBrandInput");
+
+    if (brandInput && this.selectedBrand) {
+
+        var text = brandInput.querySelector(".selected-text");
+
+        if (text) {
+
+            text.textContent =
+                this.selectedBrand.Name ||
+                this.selectedBrand.name ||
+                (this.selectedBrand.Fields && this.selectedBrand.Fields.Name) ||
+                "";
+        }
+    }
+
+    return;
+}
     var brandInput = document.getElementById("liveWebsiteBrandInput");
     var brandDropdown = document.getElementById("liveWebsiteBrandDropdown");
     if (!brandInput || !brandDropdown) {
@@ -2780,10 +2944,36 @@ renderContextsFromCache: function (list) {
               utils.hideContextLoader("liveWebsiteTree");
             }
           };
-            options.appendChild(option);
+          options.appendChild(option);
         });
       }.bind(this);
       renderBrands(this.brands);
+      // Restore previously selected Brand
+      if (this.selectedBrand) {
+
+          var savedBrand = this.brands.find(function (b) {
+              return b.Id === self.selectedBrand.Id ||
+                    b.Name === self.selectedBrand.Name;
+          });
+
+          if (savedBrand) {
+
+              selectedText.textContent =
+                  savedBrand.Name ||
+                  savedBrand.name ||
+                  (savedBrand.Fields && savedBrand.Fields.Name) ||
+                  "Unnamed Brand";
+
+              this.selectedBrand = savedBrand;
+
+              localStorage.setItem(
+                  "selectedLiveWebsiteBrand",
+                  JSON.stringify(savedBrand)
+              );
+
+              await this.loadLiveWebsiteLibrary(enterprise, savedBrand);
+          }
+      }
       search.oninput = function () {
         var value = this.value.toLowerCase();
         var brands = Array.isArray(self.brands) ? self.brands : [];
@@ -2829,64 +3019,221 @@ renderContextsFromCache: function (list) {
       GlobalDomain = oldDomain;
     }
   },
-  loadLiveWebsiteLibrary: async function (enterprise, brand) {
+loadLiveWebsiteLibrary: async function (enterprise, brand) {
     if (!enterprise || !brand) return;
+
+    var self = this;
+
+    // Already loaded for this brand
+    if (
+        this.currentBrandId === brand.Id &&
+        this.liveWebsiteLibraries &&
+        this.liveWebsiteLibraries.length
+    ) {
+
+        var tree = document.getElementById("liveWebsiteTree");
+
+        if (tree) {
+
+            tree.innerHTML = "";
+
+            this.liveWebsiteLibraries.forEach(function (website) {
+
+                var item = document.createElement("span");
+                item.className = "livewebsite-item";
+                item.textContent = website.Name || "Unnamed";
+
+                if (
+                    self.selectedLiveWebsite &&
+                    self.selectedLiveWebsite.Id === website.Id
+                ) {
+                    item.classList.add("selected");
+
+                    // First time only restore files
+                      if (!self.liveWebsiteFilesRestored) {
+                        self.liveWebsiteFilesRestored = true;
+
+                        setTimeout(async function () {
+                            await self.loadLiveWebsiteFiles(website);
+                        }, 0);
+                    }
+                }
+
+                item.onclick = async function () {
+
+                    tree.querySelectorAll(".livewebsite-item").forEach(function (x) {
+                        x.classList.remove("selected");
+                    });
+
+                    item.classList.add("selected");
+
+                    self.selectedLiveWebsite = website;
+                    self.currentLiveWebsiteId = website.Id;
+
+                    localStorage.setItem(
+                        "selectedLiveWebsite",
+                        JSON.stringify(website)
+                    );
+
+                    utils.showContextLoader("commonTableContainer");
+
+                    try {
+                        await self.loadLiveWebsiteFiles(website);
+                    }
+                    finally {
+                        utils.hideContextLoader("commonTableContainer");
+                    }
+                };
+
+                tree.appendChild(item);
+            });
+
+              if (this.selectedLiveWebsite) {
+                var selectedWebsite = this.liveWebsiteLibraries.find(function (w) {
+                    return w.Id === self.selectedLiveWebsite.Id ||
+                          w.Name === self.selectedLiveWebsite.Name;
+                });
+
+                if (selectedWebsite) {
+
+                    self.selectedLiveWebsite = selectedWebsite;
+                    self.currentLiveWebsiteId = selectedWebsite.Id;
+
+                    tree.querySelectorAll(".livewebsite-item").forEach(function (item) {
+                        item.classList.toggle(
+                            "selected",
+                            item.textContent === (selectedWebsite.Name || "")
+                        );
+                    });
+
+                    await self.loadLiveWebsiteFiles(selectedWebsite);
+                }
+            }
+        }
+
+        return;
+    }
+
+    this.currentBrandId = brand.Id;
 
     var oldDomain = GlobalDomain;
     GlobalDomain = "https://liveplatform.com";
+
     try {
-      // Selected Brand DRI
-      var brandDRI = brand["Direct Resource Identifier"] || brand.DRI;
-      // Selected Brand Id
-      var brandId = brand.Id;
-      // Brand DRI par UseCloud
-      var libraryCloud = await utils.getCloud(brandDRI,"[" + brandId + "]LiveWebsite Library");
 
-      if (!libraryCloud || !libraryCloud.DRI) {
-        console.warn("LiveWebsite Library cloud not found.");
-        return;
-      }
+        var brandDRI =
+            brand["Direct Resource Identifier"] ||
+            brand.DRI;
 
-      this.libraryCloudDRI = libraryCloud.DRI;
-      // Library cloud par GetItems
-      var data = await utils.getItems(libraryCloud.DRI,"Name",true,1,9999);
-      //this.liveWebsiteLibraries = data.Results || [];
-      var tree = document.getElementById("liveWebsiteTree");
-      this.liveWebsiteLibraries = data.Results || data.Items || [];
-      if (!tree) {
-        return;
-      }
-      tree.innerHTML = "";
-      var self = this;
-      this.liveWebsiteLibraries.forEach(function (website) {
-        var item = document.createElement("span");
-        item.className = "livewebsite-item";
-        item.textContent = website.Name || "Unnamed";
+        var brandId = brand.Id;
 
-        item.onclick = async function () {
-          tree.querySelectorAll(".livewebsite-item").forEach(function (x) {
-            x.classList.remove("selected");
-          });
-          item.classList.add("selected");
-          self.selectedLiveWebsite = website;
-          localStorage.setItem("selectedLiveWebsite",JSON.stringify(website));
+        var libraryCloud = await utils.getCloud(
+            brandDRI,
+            "[" + brandId + "]LiveWebsite Library"
+        );
 
-          utils.showContextLoader("commonTableContainer");
-          try {
-            await self.loadLiveWebsiteFiles(website);
-          }
-          finally {
-            utils.hideContextLoader("commonTableContainer");
-          }
-        };
-        tree.appendChild(item);
-      });
-    } catch (e) {
-      console.error("Library Load Error:", e);
-    } finally {
-      GlobalDomain = oldDomain;
+        if (!libraryCloud || !libraryCloud.DRI) {
+            console.warn("LiveWebsite Library cloud not found.");
+            return;
+        }
+
+        this.libraryCloudDRI = libraryCloud.DRI;
+
+        var data = await utils.getItems(
+            libraryCloud.DRI,
+            "Name",
+            true,
+            1,
+            9999
+        );
+
+        this.liveWebsiteLibraries =
+            data.Results ||
+            data.Items ||
+            [];
+
+        var tree = document.getElementById("liveWebsiteTree");
+
+        if (!tree) {
+            return;
+        }
+
+        tree.innerHTML = "";
+
+        this.liveWebsiteLibraries.forEach(function (website) {
+
+            var item = document.createElement("span");
+            item.className = "livewebsite-item";
+            item.textContent = website.Name || "Unnamed";
+
+            if (
+                self.selectedLiveWebsite &&
+                self.selectedLiveWebsite.Id === website.Id
+            ) {
+                item.classList.add("selected");
+            }
+
+            item.onclick = async function () {
+
+                tree.querySelectorAll(".livewebsite-item").forEach(function (x) {
+                    x.classList.remove("selected");
+                });
+
+                item.classList.add("selected");
+
+                self.selectedLiveWebsite = website;
+                self.currentLiveWebsiteId = website.Id;
+
+                localStorage.setItem(
+                    "selectedLiveWebsite",
+                    JSON.stringify(website)
+                );
+
+                utils.showContextLoader("commonTableContainer");
+
+                try {
+                    await self.loadLiveWebsiteFiles(website);
+                }
+                finally {
+                    utils.hideContextLoader("commonTableContainer");
+                }
+            };
+
+            tree.appendChild(item);
+        });
+
+        // Restore previously selected website
+        if (this.selectedLiveWebsite) {
+
+            var restored = this.liveWebsiteLibraries.find(function (w) {
+                return w.Id === self.selectedLiveWebsite.Id;
+            });
+
+            if (restored) {
+
+                this.selectedLiveWebsite = restored;
+                this.currentLiveWebsiteId = restored.Id;
+
+                tree.querySelectorAll(".livewebsite-item").forEach(function (item) {
+                    item.classList.toggle(
+                        "selected",
+                        item.textContent === (restored.Name || "")
+                    );
+                });
+                if (this.activeLeftPanelTab === "liveWebsite") {
+                    await this.loadLiveWebsiteFiles(restored);
+                }
+            }
+        }
+
     }
-  },
+    catch (e) {
+        console.error("Library Load Error:", e);
+    }
+    finally {
+        GlobalDomain = oldDomain;
+    }
+},
   getLiveWebsiteFiles: async function (library) {
     if (!library) {
       console.warn("LiveWebsite library missing.");
@@ -2918,6 +3265,11 @@ renderContextsFromCache: function (list) {
     }
   },
   loadLiveWebsiteFiles: async function (library) {
+    if (!library) {
+          return;
+      }
+
+      this.selectedLiveWebsite = library;
     var self = this;
     var common = this.showCommonContextBox({
       label: library.Name || "Live Website",
@@ -3168,7 +3520,10 @@ renderContextsFromCache: function (list) {
     };
     if (label) {
       label.onclick = (e) => {
+         console.log("Projects Label Click");
         e.stopPropagation();
+        console.log("Project Root:", this.projectRoot);
+        console.log("Tree:", this.projectTreeItems);
         if (!this.projectRoot) {
           return;
         }
@@ -3189,7 +3544,8 @@ renderContextsFromCache: function (list) {
         };
         this.selectedProjectFolder = rootFolder.path;
         this.selectedProjectFolderData = rootFolder;
-        this.showProjectFolderFiles(rootFolder);
+        console.log("Before showProjectFolderFiles");
+        this.showProjectFolderFiles(rootFolder,true);
       };
     }
   },
@@ -3316,26 +3672,44 @@ renderContextsFromCache: function (list) {
         var folderLabel = row.querySelector(".project-folder-label");
 
         folderLabel.onclick = function (e) {
-          e.stopPropagation();
+            e.stopPropagation();
 
-          // Remove old selection
-          document.querySelectorAll(".project-item, .project-header").forEach(function (item) {
-            item.classList.remove("tree-selected");
-          });
+            document.querySelectorAll(".project-item, .project-header").forEach(function (item) {
+                item.classList.remove("tree-selected");
+            });
 
-          // Add current selection
-          row.classList.add("tree-selected");
+            row.classList.add("tree-selected");
 
-          self.selectedProjectFolder = folder.path;
-          self.selectedProjectFolderData = folder;
+            var latestFolder = self.findProjectFolderByPath(
+                self.projectTreeItems,
+                folder.path
+            );
 
-          self.showProjectFolderFiles(folder);
+            if (!latestFolder) {
+                return;
+            }
+
+            self.selectedProjectFolder = latestFolder.path;
+            self.selectedProjectFolderData = latestFolder;
+
+            self.showProjectFolderFiles(latestFolder, true);
         };
       });
     }
     renderFolders(items || [], body,0);
   },
-  showProjectFolderFiles: function (folder) {
+  showProjectFolderFiles: function (folder, forceReload = false) {
+
+    if (!folder) return;
+
+    // Prevent reload if same folder is already active
+    if (!forceReload &&this.activeTabType === "projects" &&this.selectedProjectFolder === folder.path) {
+      return;
+    }
+
+    this.activeTabType = "projects";
+    this.selectedProjectFolder = folder.path;
+    this.selectedProjectFolderData = folder;
 
     var common = this.showCommonContextBox({
       label: "Files From : " + folder.name,
@@ -3350,48 +3724,49 @@ renderContextsFromCache: function (list) {
     var addItemsRightBtn = document.getElementById("addItemsRightBtn");
 
     if (addItemsRightBtn) {
-        addItemsRightBtn.style.display = "flex";
+      addItemsRightBtn.style.display = "flex";
 
-        addItemsRightBtn.onclick = () => {
-            this.showCreateProjectFilePopup(folder);
-        };
+      addItemsRightBtn.onclick = () => {
+        this.showCreateProjectFilePopup(folder);
+      };
     }
-
+    console.log("Folder:", folder);
+    console.log("Children:", folder.children);
     var files = (folder.children || []).filter(function (item) {
-      return item.type !== "folder";
+        return item.type !== "folder";
     });
 
     var self = this;
 
     new drawTable({
-      container: container,
-      data: files,
-      fields: [
-        {
-          label: "Name",
-          field: "name"
-        },
-        {
-          label: "Modified On",
-          field: "modifiedOn"
-        },
-        {
-          label: "Source",
-          render: function () {
-            return "Local";
+        container: container,
+        data: files,
+        fields: [
+          {
+            label: "Name",
+            field: "name"
+          },
+          {
+            label: "Modified On",
+            field: "modifiedOn"
+          },
+          {
+            label: "Source",
+            render: function () {
+              return "Local";
+            }
           }
-        }
-      ],
-      emptyText: "No Files Found",
-      onRowClick: async function (file) {
+        ],
+        emptyText: "No Files Found",
+        onRowClick: async function (file) {
           await self.openProjectFile(file);
-      }
+        }
     });
 
     search.oninput = function () {
       var text = this.value.toLowerCase();
       container.querySelectorAll("tbody tr").forEach(function (row) {
-        row.style.display = row.textContent.toLowerCase().includes(text) ? "" : "none";
+        row.style.display = row.textContent.toLowerCase().includes(text)? "": "none";
       });
     };
   },
@@ -3453,97 +3828,110 @@ renderContextsFromCache: function (list) {
   showCreateProjectPopup: function () {
 
     if (!this.selectedProjectFolder) {
-        this.selectedProjectFolder = this.projectRoot;
+      this.selectedProjectFolder = this.projectRoot;
     }
 
     var modal = document.getElementById("projectCreateModal");
     var name = document.getElementById("projectCreateName");
     var type = document.getElementById("projectCreateType");
+    var form = document.getElementById("projectCreateForm");
 
     name.value = "";
     type.value = "folder";
     type.disabled = false;
+    type.parentElement.style.display = "block";
 
     modal.style.display = "flex";
-    document.getElementById("projectCreateOk").onclick = async () => {
-      var fileName = name.value.trim();
-      if (!fileName) {
-        utils.showSnackbar("Enter name.", "warning");
+
+    document.getElementById("projectCreateOk").onclick = async (e) => {
+      e.preventDefault();
+
+      if (!form.checkValidity()) {
+        form.reportValidity();
         return;
       }
+
+      var fileName = name.value.trim();
+
       if (type.value === "folder") {
         await window.electronAPI.createProjectFolder(this.selectedProjectFolder + "\\" + fileName);
       } else {
         await window.electronAPI.createProjectFile(this.selectedProjectFolder + "\\" + fileName);
       }
+
       modal.style.display = "none";
       await this.loadProjects();
       var folder = this.findProjectFolderByPath(this.projectTreeItems,this.selectedProjectFolder);
+
       if (folder) {
+        this.selectedProjectFolder = folder.path;
         this.selectedProjectFolderData = folder;
-        this.showProjectFolderFiles(folder);
-      }
-      else {
+        this.showProjectFolderFiles(folder, true);
+      } else {
         var rootFolder = {
           name: "Projects",
           path: this.projectRoot,
           children: this.projectTreeItems || []
         };
+
+        this.selectedProjectFolder = rootFolder.path;
         this.selectedProjectFolderData = rootFolder;
-        this.showProjectFolderFiles(rootFolder);
+        this.showProjectFolderFiles(rootFolder, true);
       }
     };
+
     document.getElementById("projectCreateCancel").onclick = () => {
       modal.style.display = "none";
+      form.reset();
+      type.value = "folder";
+      type.disabled = false;
+      type.parentElement.style.display = "block";
     };
   },
   showCreateProjectFilePopup: function (folder) {
+
     var modal = document.getElementById("projectCreateModal");
     var name = document.getElementById("projectCreateName");
     var type = document.getElementById("projectCreateType");
+    var form = document.getElementById("projectCreateForm");
 
     name.value = "";
     type.value = "file";
     type.disabled = true;
+    type.parentElement.style.display = "none";
 
     modal.style.display = "flex";
 
-    document.getElementById("projectCreateOk").onclick = async () => {
-        var fileName = name.value.trim();
+    document.getElementById("projectCreateOk").onclick = async (e) => {
+      e.preventDefault();
 
-        if (!fileName) {
-            utils.showSnackbar("Enter filename.", "warning");
-            return;
-        }
+      if (!form.checkValidity()) {
+        form.reportValidity();
+        return;
+      }
 
-        await window.electronAPI.createProjectFile(folder.path + "\\" + fileName);
+      var fileName = name.value.trim();
 
-        modal.style.display = "none";
+      await window.electronAPI.createProjectFile(
+        folder.path + "\\" + fileName
+      );
 
-        // Reload latest project tree
-        await this.loadProjects();
+      modal.style.display = "none";
+      await this.loadProjects();
+      var updatedFolder = this.findProjectFolderByPath(this.projectTreeItems,folder.path);
+      if (updatedFolder) {
+        this.selectedProjectFolder = updatedFolder.path;
+        this.selectedProjectFolderData = updatedFolder;
 
-        // Get updated folder from latest tree
-        var updatedFolder = this.findProjectFolderByPath(
-            this.projectTreeItems,
-            folder.path
-        );
-
-        if (updatedFolder) {
-            this.selectedProjectFolder = updatedFolder.path;
-            this.selectedProjectFolderData = updatedFolder;
-
-            // Refresh tree
-            this.renderProjectTree(this.projectTreeItems);
-
-            // Refresh files
-            this.showProjectFolderFiles(updatedFolder);
-        }
+        this.renderProjectTree(this.projectTreeItems);
+        this.showProjectFolderFiles(updatedFolder);
+      }
     };
 
     document.getElementById("projectCreateCancel").onclick = () => {
-        modal.style.display = "none";
-        type.disabled = false;
+      modal.style.display = "none";
+      type.disabled = false;
+      type.parentElement.style.display = "block";
     };
   },
   initializeLiveWebsiteDropdowns: function () {
@@ -3553,14 +3941,36 @@ renderContextsFromCache: function (list) {
       var brandInput = document.getElementById("liveWebsiteBrandInput");
       var brandDropdown = document.getElementById("liveWebsiteBrandDropdown");
 
-      if (enterpriseInput &&enterpriseDropdown &&!enterpriseInput.contains(e.target) &&!enterpriseDropdown.contains(e.target)) {
+      if (enterpriseInput && enterpriseDropdown && !enterpriseInput.contains(e.target) && !enterpriseDropdown.contains(e.target)) {
         enterpriseDropdown.style.display = "none";
       }
 
-      if (brandInput &&brandDropdown &&!brandInput.contains(e.target) &&!brandDropdown.contains(e.target)) {
+      if (brandInput && brandDropdown && !brandInput.contains(e.target) && !brandDropdown.contains(e.target)) {
         brandDropdown.style.display = "none";
       }
     });
+
+    // Enterprise click
+    var enterpriseInput = document.getElementById("liveWebsiteEnterpriseInput");
+    var enterpriseDropdown = document.getElementById("liveWebsiteEnterpriseDropdown");
+    var brandDropdown = document.getElementById("liveWebsiteBrandDropdown");
+
+    if (enterpriseInput) {
+      enterpriseInput.addEventListener("click", function () {
+        if (brandDropdown) {
+          brandDropdown.style.display = "none";
+        }
+      });
+    }
+    // Brand click
+    var brandInput = document.getElementById("liveWebsiteBrandInput");
+    if (brandInput) {
+      brandInput.addEventListener("click", function () {
+        if (enterpriseDropdown) {
+          enterpriseDropdown.style.display = "none";
+        }
+      });
+    }
   },
 };
 window.editorInstance = new codeEditor();

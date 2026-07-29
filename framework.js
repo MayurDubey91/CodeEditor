@@ -273,21 +273,68 @@ utils.setCloudItemsDetails = function(url, items) {
   Clouds[url] = Clouds[url] || {};
   Clouds[url].ItemsDetails = items; 
 };
-utils.getCloud = function(dri,cloudName) {
-  var url = dri + "/UseCloud.json?Name=" + cloudName;
-  if (utils.getCloudDetails(url) && utils.getCloudDetails(url).DRI) {
-    return new Promise((resolve, reject) => {
-      resolve(utils.getCloudDetails(url));
-    });
-  }
-  var userDRI = UserData["Direct Resource Identifier"];
-  return useFetch(url)
-  .then(res => res.json())
-  .then(data => {
-    utils.setCloudDetails(url, data.Results);
-    return data.Results;
-  });
-},
+// utils.getCloud = function(dri,cloudName) {
+//   var url = dri + "/UseCloud.json?Name=" + cloudName;
+//   if (utils.getCloudDetails(url) && utils.getCloudDetails(url).DRI) {
+//     return new Promise((resolve, reject) => {
+//       resolve(utils.getCloudDetails(url));
+//     });
+//   }
+//   var userDRI = UserData["Direct Resource Identifier"];
+//   return useFetch(url)
+//   .then(res => res.json())
+//   .then(data => {
+//     utils.setCloudDetails(url, data.Results);
+//     return data.Results;
+//   });
+// },
+utils.getCloud = function (dri, cloudName) {
+
+    var url = dri + "/UseCloud.json?Name=" + encodeURIComponent(cloudName);
+
+    console.log("UseCloud URL:", url);
+
+    var cached = utils.getCloudDetails(url);
+    if (cached && cached.DRI) {
+        return Promise.resolve(cached);
+    }
+
+    return useFetch(url)
+        .then(function (res) {
+
+            if (!res.ok) {
+                throw new Error(
+                    "UseCloud request failed.\n" +
+                    "Status : " + res.status + "\n" +
+                    "URL : " + url
+                );
+            }
+
+            return res.text();
+        })
+        .then(function (text) {
+
+            var data;
+
+            try {
+                data = JSON.parse(text);
+            }
+            catch (e) {
+                console.error("Invalid JSON returned from:", url);
+                console.error(text);
+
+                throw new Error("Server returned HTML instead of JSON.");
+            }
+
+            if (!data || !data.Results) {
+                return null;
+            }
+
+            utils.setCloudDetails(url, data.Results);
+
+            return data.Results;
+        });
+};
 
 utils.getItems = function (dri, fields, refresh, pageNumber, ResultCount) {
   var page = pageNumber || 1;
