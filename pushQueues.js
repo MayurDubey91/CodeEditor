@@ -188,9 +188,17 @@
         (items || []).forEach(function (item, index) {
             var row = document.createElement("div");
             row.className = "tree-node -cloud-item";
-            var name = item.Name ||"Unnamed";
-            var cloudDRI = item.DRI ||item["Direct Resource Identifier"] ||"";
-            row.innerHTML = `<span class="label">${name}</span>`;
+            // var name = item.Name ||"Unnamed";
+            // var cloudDRI = item.DRI ||item["Direct Resource Identifier"] ||"";
+            // row.innerHTML = `<span class="label">${name}</span>`;
+            var name = item.Name || "Unnamed";
+            var groupName = item["Push Queue Group"] || "";
+            var cloudDRI = item.DRI || item["Direct Resource Identifier"] || "";
+
+            row.innerHTML = `
+                <div class="queue-name">${name}</div>
+                ${groupName ? `<div class="queue-group">Group: ${groupName}</div>` : ""}
+            `;
             row.onclick = async function () {
                 cloudList.querySelectorAll(".-cloud-item").forEach(function (x) {
                     x.classList.remove("selected");
@@ -258,8 +266,17 @@
 
         box.style.display = "block";
 
+        // if (commonLabel) {
+        //     commonLabel.textContent = this.selectedCloudName || "";
+        // }
         if (commonLabel) {
-            commonLabel.textContent = this.selectedCloudName || "";
+            var label = this.selectedCloudName || "";
+
+            if (this.selectedGroupName) {
+                label += " (Group : " + this.selectedGroupName + ")";
+            }
+
+            commonLabel.textContent = label;
         }
 
         if (searchInput) {
@@ -731,7 +748,6 @@
 
         var lastPushedBy = document.getElementById("lastPushedBy");
         var lastPushedOn = document.getElementById("lastPushedOn");
-
         var url = cloudDRI + "/GetFieldValues.json?Fields=Last Pushed By||Last Pushed On";
 
         useFetch(url)
@@ -766,26 +782,18 @@
     },
     filterPushQueuesByGroup: function () {
         var self = this;
-
         var queues = self.pushQueueClouds || [];
-
-        if (
-            !self.selectedGroup ||
-            self.selectedGroup === "All"
-        ) {
+        if (!self.selectedGroup ||self.selectedGroup === "All") {
             self.drawCloudList(queues);
             return;
         }
-
         var filtered = queues.filter(function (item) {
             return (item["Push Queue Group"] || "") === self.selectedGroup;
         });
-
         self.drawCloudList(filtered);
     },
     initializeGroupDropdown: async function () {
         var self = this;
-
         var input = document.getElementById("groupInput");
         var dropdown = document.getElementById("groupDropdown");
         var selectedText = input.querySelector(".selected-text");
@@ -797,82 +805,57 @@
             return;
         }
 
-        // All queues se groups nikalo
         var groups = ["All"];
 
         (this.pushQueueClouds || []).forEach(function (item) {
-
             var group = item["Push Queue Group"];
-
             if (group && !groups.includes(group)) {
                 groups.push(group);
             }
         });
 
         function render(list) {
-
             options.innerHTML = "";
-
             if (!list.length) {
-
                 noResult.style.display = "block";
                 return;
             }
-
             noResult.style.display = "none";
-
             list.forEach(function (groupName) {
-
                 var div = document.createElement("div");
-
                 div.className = "dropdown-option";
                 div.textContent = groupName;
-
                 div.onclick = function (e) {
-
                     e.stopPropagation();
-
                     self.selectedGroup = groupName;
-
                     selectedText.textContent = groupName;
-
                     dropdown.style.display = "none";
-
                     self.setupCloudSearch();
                 };
-
                 options.appendChild(div);
             });
         }
-
         render(groups);
-
         search.oninput = function () {
-
             var value = this.value.toLowerCase();
-
             render(groups.filter(function (g) {
                 return g.toLowerCase().includes(value);
             }));
         };
 
+        // Replace old handlers instead of adding new ones
         input.onclick = function (e) {
-
             e.stopPropagation();
-
-            dropdown.style.display =
-                dropdown.style.display === "block"
-                    ? "none"
-                    : "block";
+            dropdown.style.display = dropdown.style.display === "block" ? "none" : "block";
         };
 
         dropdown.onclick = function (e) {
             e.stopPropagation();
         };
 
-        document.addEventListener("click", function () {
+        document.onclick = function () {
             dropdown.style.display = "none";
-        });
+        };
     },
   };
 //   window.pushQueuesPlugin = new pushQueuesContent();
