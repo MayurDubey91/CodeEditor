@@ -1540,9 +1540,9 @@ body.logged-in #loginOverlay {
 
 .-context-input-box,#projectFilesSection,#filesSection,#pushQueueItemsSection {
   flex: 0 0 430px;
-  height: 250px;
-  min-height: 250px;
-  max-height: 250px;
+  height: 430px;
+  min-height: 430px;
+  max-height: 430px;
   flex-direction: column;
   overflow: hidden;
 }
