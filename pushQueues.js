@@ -792,70 +792,107 @@
         });
         self.drawCloudList(filtered);
     },
-    initializeGroupDropdown: async function () {
-        var self = this;
-        var input = document.getElementById("groupInput");
-        var dropdown = document.getElementById("groupDropdown");
-        var selectedText = input.querySelector(".selected-text");
-        var search = document.getElementById("groupSearch");
-        var options = document.getElementById("groupOptions");
-        var noResult = document.getElementById("groupNoResult");
+initializeGroupDropdown: function () {
+    var self = this;
 
-        if (!input || !dropdown || !selectedText || !options) {
+    var input = document.getElementById("groupInput");
+    var dropdown = document.getElementById("groupDropdown");
+    var selectedText = input.querySelector(".selected-text");
+    var search = document.getElementById("groupSearch");
+    var options = document.getElementById("groupOptions");
+    var noResult = document.getElementById("groupNoResult");
+
+    if (!input || !dropdown || !selectedText || !search || !options || !noResult) {
+        return;
+    }
+
+    // Build unique groups
+    var groups = [];
+    var groupMap = {};
+
+    groupMap["all"] = "All";
+
+    (self.pushQueueClouds || []).forEach(function (item) {
+
+        var group = (item["Push Queue Group"] || "").trim();
+
+        if (!group) {
             return;
         }
 
-        var groups = ["All"];
+        var key = group.toLowerCase();
 
-        (this.pushQueueClouds || []).forEach(function (item) {
-            var group = item["Push Queue Group"];
-            if (group && !groups.includes(group)) {
-                groups.push(group);
-            }
-        });
-
-        function render(list) {
-            options.innerHTML = "";
-            if (!list.length) {
-                noResult.style.display = "block";
-                return;
-            }
-            noResult.style.display = "none";
-            list.forEach(function (groupName) {
-                var div = document.createElement("div");
-                div.className = "dropdown-option";
-                div.textContent = groupName;
-                div.onclick = function (e) {
-                    e.stopPropagation();
-                    self.selectedGroup = groupName;
-                    selectedText.textContent = groupName;
-                    dropdown.style.display = "none";
-                    self.setupCloudSearch();
-                };
-                options.appendChild(div);
-            });
+        if (!groupMap[key]) {
+            groupMap[key] = group.charAt(0).toUpperCase() + group.slice(1).toLowerCase();
         }
-        render(groups);
-        search.oninput = function () {
-            var value = this.value.toLowerCase();
-            render(groups.filter(function (g) {
+    });
+
+    groups = Object.values(groupMap);
+
+    function render(list) {
+
+        options.innerHTML = "";
+
+        if (!list.length) {
+            noResult.style.display = "block";
+            return;
+        }
+
+        noResult.style.display = "none";
+
+        list.forEach(function (groupName) {
+
+            var div = document.createElement("div");
+            div.className = "dropdown-option";
+            div.textContent = groupName;
+
+            div.onclick = function (e) {
+                e.stopPropagation();
+
+                self.selectedGroup = groupName;
+                selectedText.textContent = groupName;
+
+                dropdown.style.display = "none";
+
+                self.setupCloudSearch();
+            };
+
+            options.appendChild(div);
+        });
+    }
+
+    render(groups);
+
+    search.value = "";
+
+    search.oninput = function () {
+
+        var value = this.value.trim().toLowerCase();
+
+        render(
+            groups.filter(function (g) {
                 return g.toLowerCase().includes(value);
-            }));
-        };
+            })
+        );
+    };
 
-        // Replace old handlers instead of adding new ones
-        input.onclick = function (e) {
-            e.stopPropagation();
-            dropdown.style.display = dropdown.style.display === "block" ? "none" : "block";
-        };
+    input.onclick = function (e) {
+        e.stopPropagation();
 
-        dropdown.onclick = function (e) {
-            e.stopPropagation();
-        };
+        search.value = "";
+        render(groups);
 
-        document.onclick = function () {
-            dropdown.style.display = "none";
-        };
-    },
+        dropdown.style.display =
+            dropdown.style.display === "block" ? "none" : "block";
+    };
+
+    dropdown.onclick = function (e) {
+        e.stopPropagation();
+    };
+
+    document.onclick = function () {
+        dropdown.style.display = "none";
+    };
+},
   };
 //   window.pushQueuesPlugin = new pushQueuesContent();
