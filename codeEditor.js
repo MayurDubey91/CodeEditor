@@ -558,7 +558,6 @@ codeEditor.prototype = {
       aiMessages: [], 
       lastAIResult: null,
     };
-
     this.allContexts.push(tab);
     this.currentContextId = id;
     this.renderTabs();
@@ -568,7 +567,6 @@ codeEditor.prototype = {
   },
 
   renderTabs: function () {
-    console.log("All Tabs:", this.allContexts);
     var container = document.getElementById("tabsContainer");
     container.innerHTML = "";
     this.allContexts.forEach(tab => {
