@@ -1,6 +1,8 @@
 html,body {
   width: 100%;
   height: 100%;
+  min-width: 800px;
+  min-height: 600px;
   margin: 0;
   overflow: auto;
   font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
@@ -101,6 +103,8 @@ body.logged-in #loginOverlay {
 .-main-container {
   width: 100%;
   height: 100%;
+  min-width: 800px;
+  min-height: 600px;
 }
 .editor-content {
   display: flex;
@@ -109,22 +113,28 @@ body.logged-in #loginOverlay {
   overflow: hidden;
 }
 .-liveactions-section {
+  width: 430px;
+  max-width: 40%;
   flex-shrink: 0;
   border-right: 1px solid #444;
   background: #1f2430;
 }
 .hierarchy-panel {
-  display: flex;
-  flex-direction: column;
-  width: 430px;
-  min-width: 430px;
-  height: 100vh;
+  width: 100%;
+  min-width: 0;
+  max-width: none;
+  box-sizing: border-box;
   background: #1f2430;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
 }
+
 .hierarchy-panel.expanded {
   width: 500px;
-  min-width: 500px;
+  min-width: 280px;
 }
 .editor-main {
   display: flex;
@@ -168,14 +178,14 @@ body.logged-in #loginOverlay {
   color: #fff;
 }
 .left-panel-bottom-content-container {
-  flex: 1;
-  min-height: 0;
   display: flex;
   flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
   overflow: hidden;
 }
 .left-panel-tab-panels {
-  flex: 1;
+  flex: 1 1 auto;
   min-height: 0;
   overflow: hidden;
 }
@@ -281,12 +291,9 @@ body.logged-in #loginOverlay {
   padding: 5px;
 }
 .-context-input-box,#projectFilesSection,#filesSection,#pushQueueItemsSection {
-  flex: 0 0 430px;
   height: 430px;
-  min-height: 430px;
   max-height: 430px;
-  flex-direction: column;
-  overflow: hidden;
+  margin-bottom: 35px;
 }
 .-cache-box {
   display: flex;
@@ -297,6 +304,7 @@ body.logged-in #loginOverlay {
   border-top: 1px solid #333;
   background: #1f2430;
   color: #fff;
+  overflow: auto;
 }
 .tree-item {
   color: #fff;
@@ -321,11 +329,15 @@ body.logged-in #loginOverlay {
 }
 .left-panel-contexts-container {
   display: flex;
-  flex-shrink: 0;
+  flex: 1 1 auto;
   flex-direction: column;
-  max-height: 280px;
+  min-height: 0;
+  max-height: none;
+  width: 100%;
   border-top: 1px solid #3c3c3c;
   background: #1f2430;
+  overflow: hidden;
+  box-sizing: border-box;
 }
 .contexts-header {
   padding: 8px 10px;
@@ -347,10 +359,14 @@ body.logged-in #loginOverlay {
 .refresh-btn {
   border: 0;
   background: transparent;
-  color: #fff;
   font-size: 18px;
   font-weight: bold;
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  color: #ccc;
 }
 .context-inherited:hover {
   text-decoration: line-through;
@@ -526,18 +542,16 @@ body.logged-in #loginOverlay {
 .enterprise-section,.brand-section {
   margin: 0;
 }
-/* .enterprise-dropdown-wrapper {
-  position: relative;
-  display: flex;
-  flex-direction: row;
-  width: 100%;
-} */
 .enterprise-dropdown-list {
   position: absolute;
+  top: 30px;
+  left: 0;
   width: 100%;
-  max-height: 220px;
-  overflow: auto;
-  z-index: 1000;
+  border: 1px solid #555;
+  border-radius: 4px;
+  z-index: 9999;
+  max-height: 300px;
+  overflow: hidden;
 }
 .enterprise-option,.enterprise-dropdown-item {
   padding: 10px;
@@ -840,22 +854,49 @@ body.logged-in #loginOverlay {
   min-height: 0;
   background: #1f2430;
 }
-.left-panel-script-container {
-  padding: 4px;
-  gap: 5px;
+/* .left-panel-script-container {
   display: flex;
   align-items: center;
-  flex-shrink: 0;
+  gap: 5px;
+  flex: 0 0 35px;
+  width: 100%;
+  height: 35px;
   min-height: 35px;
-  border-top: 1px solid #3c3c3c;
-  background: #1f2430;
-}
-.left-panel-script-container,.bottom-bar {
+  max-height: 35px;
+  padding: 4px;
+  margin: 0;
+  box-sizing: border-box;
+  border-top: 1px solid #333;
+  background: #252526;
+  position: relative;
+  z-index: 30;
+} */
+
+.bottom-bar {
   display: flex;
   align-items: center;
   flex-shrink: 0;
   border-top: 1px solid #333;
   background: #252526;
+}
+.left-panel-script-container {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    width: 100%;
+    height: 35px;
+    min-height: 35px;
+    max-height: 35px;
+    padding: 4px;
+    margin: 0;
+    box-sizing: border-box;
+    border-top: 1px solid #333;
+    background: #252526;
+    z-index: 30;
 }
 .left-panel-script-container .editor-input {
   margin: 0;
@@ -986,25 +1027,29 @@ body.logged-in #loginOverlay {
   font-size: 12px;
 }
 .project-context-menu-item {
+  position: fixed;
+  padding: 8px 12px;
+  min-width: 90px;
+  box-sizing: border-box;
   background: #222;
   color: #fff;
   border: 1px solid #444;
-  box-shadow: 0 2px 10px rgba(0,0,0,.4);
-  z-index: 999999;
   border-radius: 5px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
+  z-index: 999999;
   font-size: 12px;
-  padding: 5px;
+  cursor: pointer;
 }
-
+.project-context-menu-item:hover {
+  background: #444;
+}
 .context-menu.hidden {
   display: none;
 }
-
 .context-menu div {
   padding: 8px;
   cursor: pointer;
 }
-
 .context-menu div:hover {
   background: #444;
 }
@@ -1191,10 +1236,19 @@ body.logged-in #loginOverlay {
   cursor: pointer;
 }
 #commonContextWrapper {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
+    position: relative;
+
+    display: flex;
+    flex-direction: column;
+
+    flex: 0 0 auto;
+
+    width: 100%;
+    min-width: 0;
+    min-height: 0;
+
+    overflow: hidden;
+    box-sizing: border-box;
 }
 
 #contextsLoader {
@@ -1289,19 +1343,6 @@ body.logged-in #loginOverlay {
 .enterprise-input .arrow {
   font-size: 12px;
   margin-left: 8px;
-}
-/* Common Dropdown For Enterprise + Brand */
-.enterprise-dropdown-list {
-  position: absolute;
-  top: 30px;
-  left: 0;
-  width: 100%;
-  border: 1px solid #555;
-  border-radius: 4px;
-  z-index: 9999;
-  display: none;
-  max-height: 300px;
-  overflow: hidden;
 }
 /* Search */
 .enterprise-dropdown-list .search {
@@ -1443,15 +1484,6 @@ body.logged-in #loginOverlay {
   justify-content: center;
   cursor: pointer;
 }
-.refresh-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  color: #ccc;
-}
 .refresh-icon {
   width: 16px;
   height: 16px;
@@ -1540,4 +1572,54 @@ button {
 .live-website-select-row > .enterprise-section,
 .live-website-select-row > .brand-section {
   margin: 0;
+}
+#panelResizer {
+  flex: 0 0 5px;
+  width: 5px;
+  height: 100%;
+  background: #333;
+  cursor: col-resize;
+  user-select: none;
+  z-index: 100;
+}
+#panelResizer:hover {
+  background: #555;
+}
+.no-select {
+  user-select: none !important;
+}
+#leftPanelHorizontalResizer {
+  flex: 0 0 5px;
+  width: 100%;
+  height: 5px;
+  min-height: 5px;
+  max-height: 5px;
+  cursor: row-resize;
+  background: transparent;
+  position: relative;
+  z-index: 20;
+}
+#leftPanelHorizontalResizer:hover {
+  background: #3f3f46;
+}
+#commonTableContainer {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
+  overflow-y: auto;
+  overflow-x: auto;
+  box-sizing: border-box;
+}
+#leftPanel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+#commonTableContainer .contexts-table {
+  width: 100%;
+  min-width: 100%;
+  border-collapse: collapse;
 }

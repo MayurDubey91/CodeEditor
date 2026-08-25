@@ -574,6 +574,19 @@
                 }
             }
         });
+        setTimeout(function () {
+            var rows = container.querySelectorAll("tbody tr");
+            rows.forEach(function (row, index) {
+                var item = (self.currentTableItems || [])[index];
+                var contextId = item && (item["Object Id"] || item.ObjectId || (item.Object && item.Object.Id) || item.Id);
+                var removeId = item && (item.Id || item["Item Id"] || item.ItemId);
+                if (contextId) {
+                    row.dataset.contextId = contextId;
+                    row.dataset.cloudDri = self.cloudDRI || "";
+                    row.dataset.removeId = removeId || contextId;
+                }
+            });
+        }, 0);
     },
     createItems: function (selectedCloudDRI, name, desc) {
       var self = this;

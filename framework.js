@@ -169,6 +169,143 @@ utils.removeItems = function (CloudDRI, ItemId, Confirmed, Callback) {
     utils.showSnackbar("Something went wrong while removing item", "error");
   });
 };
+utils.resizarFunction = function (config) {
+  if (!config) return;
+
+  var resizer = document.querySelector(config.resizer);
+  var leftPanel = document.querySelector(config.left);
+
+  if (!resizer || !leftPanel) {
+    console.warn("Resizer or left section not found", config);
+    return;
+  }
+
+  var state = {
+    startX: 0,
+    startWidth: 0,
+    minWidth: config.minWidth || 150,
+    maxWidth: config.maxWidth || 600,
+    leftPanel: leftPanel,
+    mouseMoveHandler: null,
+    mouseUpHandler: null
+  };
+
+  resizer.style.cursor = "col-resize";
+
+  resizer.addEventListener("mousedown", function (e) {
+    state.startX = e.clientX;
+    state.startWidth = leftPanel.offsetWidth;
+
+    document.body.classList.add("no-select");
+
+    state.mouseMoveHandler = function (ev) {
+      utils.handleResizeMouseMove(ev, state);
+    };
+
+    state.mouseUpHandler = function () {
+      utils.handleResizeMouseUp(state);
+    };
+
+    document.addEventListener("mousemove", state.mouseMoveHandler);
+    document.addEventListener("mouseup", state.mouseUpHandler);
+
+    e.preventDefault();
+  });
+};
+
+
+utils.handleResizeMouseMove = function (e, state) {
+  if (!state || !state.leftPanel) return;
+
+  var delta = e.clientX - state.startX;
+  var newWidth = state.startWidth + delta;
+
+  newWidth = Math.max(
+    state.minWidth,
+    Math.min(state.maxWidth, newWidth)
+  );
+
+  state.leftPanel.style.width = newWidth + "px";
+};
+
+
+utils.handleResizeMouseUp = function (state) {
+  document.body.classList.remove("no-select");
+
+  if (state.mouseMoveHandler) {
+    document.removeEventListener(
+      "mousemove",
+      state.mouseMoveHandler
+    );
+  }
+
+  if (state.mouseUpHandler) {
+    document.removeEventListener(
+      "mouseup",
+      state.mouseUpHandler
+    );
+  }
+
+  state.mouseMoveHandler = null;
+  state.mouseUpHandler = null;
+};
+utils.verticalResizerFunction = function (config) {
+  if (!config) return;
+
+  var resizer = document.querySelector(config.resizer);
+  var topPanel = document.querySelector(config.top);
+
+  if (!resizer || !topPanel) {
+    console.warn("Vertical resizer or top section not found", config);
+    return;
+  }
+
+  var state = {
+    startY: 0,
+    startHeight: 0,
+    minHeight: config.minHeight || 100,
+    maxHeight: config.maxHeight || 800,
+    topPanel: topPanel,
+    mouseMoveHandler: null,
+    mouseUpHandler: null
+  };
+
+  resizer.style.cursor = "row-resize";
+
+  resizer.addEventListener("mousedown", function (e) {
+    state.startY = e.clientY;
+    state.startHeight = topPanel.offsetHeight;
+    document.body.classList.add("no-select");
+    state.mouseMoveHandler = function (ev) {
+      var newHeight = state.startHeight +(ev.clientY - state.startY);
+      if (newHeight < state.minHeight) {
+        newHeight = state.minHeight;
+      }
+
+      if (newHeight > state.maxHeight) {
+        newHeight = state.maxHeight;
+      }
+
+      state.topPanel.style.flex = "none";
+      state.topPanel.style.height = newHeight + "px";
+
+      if (window.editorInstance && window.editorInstance.monacoEditor) {
+        window.editorInstance.monacoEditor.layout();
+      }
+    };
+
+    state.mouseUpHandler = function () {
+      document.body.classList.remove("no-select");
+      document.removeEventListener("mousemove",state.mouseMoveHandler);
+      document.removeEventListener("mouseup",state.mouseUpHandler);
+      state.mouseMoveHandler = null;
+      state.mouseUpHandler = null;
+    };
+    document.addEventListener("mousemove",state.mouseMoveHandler);
+    document.addEventListener("mouseup",state.mouseUpHandler);
+    e.preventDefault();
+  });
+};
 var drawTable = function (O) {
   this.container = O.container;
   this.data = O.data || [];
